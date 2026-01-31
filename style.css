@@ -1,0 +1,9 @@
+*{
+    margin: 0%;
+    padding: 0%;
+}
+#canvas{
+    width: 95vw;
+    min-height: 99vh;
+    background-color: rgb(155, 129, 129);
+}
