@@ -12,16 +12,15 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 ctx.strokeStyle="black"  // brush's color
-ctx.lineWidth=2     // brush size
-ctx.lineCap="square"    // something like brush type
+ctx.lineWidth=4     // brush size
+ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
 class Draw
 {
     constructor()
     {
         this.drawing=false;
-        this.lastx=0;
-        this.lasty=0;
+        this.points=[]
         this.init();
     }
     init()
@@ -38,31 +37,74 @@ class Draw
             y:e.clientY - rc.top
         }
     }
+    smoothPoint(prev, curr, factor = 0.2) {
+    return {
+        x: prev.x * factor + curr.x * (1 - factor),
+        y: prev.y * factor + curr.y * (1 - factor)
+    };
+    }
     onMouseDown(e)
     {
         this.drawing=true;
-        const {x,y}=this.getMousePosition(e)
-        this.lastx=x
-        this.lasty=y
+        const pos=this.getMousePosition(e)
+        this.points=[pos]
         ctx.beginPath();    // begin 
-        ctx.moveTo(x, y)    // from here
+        ctx.moveTo(pos.x, pos.y)    // from here
     }
     onMouseMove(e)
     {
         if(!this.drawing)
             return;
+        const pos=this.getMousePosition(e);
 
-        const {x,y}=this.getMousePosition(e)
-        let midX=(this.lastx+x)/2
-        let midY=(this.lasty+y)/2   // these mid points for smoother lines
-        ctx.quadraticCurveTo(this.lastx, this.lasty, midX, midY)
-        ctx.stroke();   // to this position
+        if(this.points.length>0)
+        {
+            let last=this.points[this.points.length-1];
+            let smoothpos=this.smoothPoint(last, pos)
+            this.points.push(smoothpos)
+        }
+        else
+        {
+            this.points.push(pos)
+        }
+        if(this.points.length>=4)
+        {
+            let p0=this.points[0]
+            let p1=this.points[1]
+            let p2=this.points[2]
+            let p3=this.points[3]
 
-        this.lastx=x;
-        this.lasty=y;
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
+            ctx.stroke();   // to this position
+            this.points.shift()
+        }
+        // these mid points for smoother lines
+
     }
-    onMouseUp()
+    onMouseUp() 
     {
+        // if(this.points.length===3)
+        // {
+        //     const {p0,p1,p2}=this.points;
+        //     ctx.beginPath()
+        //     ctx.moveTo(p0.x, p0.y)
+        //     ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y)
+        //     ctx.stroke();
+        // }
+        // else if(this.points.length===2)
+        // {
+        //     const {p0,p1}=this.points;
+        //     ctx.beginPath();
+        //     ctx.moveTo(p0.x, p0.y);
+        //     ctx.lineTo(p1.x, p1.y)
+        //     ctx.stroke()
+        // }
+        this.points=[]
         this.drawing=false;
     }
 }
