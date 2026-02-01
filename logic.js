@@ -3,16 +3,14 @@ const canvas = document.getElementById("canvas");
 
 /** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext("2d");
-
-
+const color=document.getElementById("colorpick");
+const size=document.getElementById('size');
 function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 }
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
-ctx.strokeStyle="black"  // brush's color
-ctx.lineWidth=4     // brush size
 ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
 class Draw
@@ -45,6 +43,8 @@ class Draw
     }
     onMouseDown(e)
     {
+        ctx.strokeStyle=color.value;  // brush's color
+        ctx.lineWidth=size.value     // brush size
         this.drawing=true;
         const pos=this.getMousePosition(e)
         this.points=[pos]
