@@ -2,7 +2,7 @@
 const canvas = document.getElementById("canvas");
 
 /** @type {CanvasRenderingContext2D} */
-const ctx = canvas.getContext("2d");
+const ctx = canvas.getContext("2d",{willReadFrequently:true});
 const color=document.getElementById("colorpick");
 const size=document.getElementById('size');
 function resizeCanvas() {
@@ -122,6 +122,7 @@ class Draw
 
     applyState(state)
     {
+        if(!state) return;
         ctx.putImageData(state, 0, 0)
     }
 }
@@ -156,19 +157,19 @@ class UndoStack
         this.top++;
         if(this.stack[this.top])
         {
-            this.stack.length=this.top-1;
+            this.stack.length=this.top;
         }
         this.stack.push(value);
     }
     undo()
     {
-        if(this.top===1) return;
+        if(this.top===0) return;
         let state=this.stack[--this.top];
         this.draw.applyState(state)
     }
     redo()
     {
-        if(this.top+1>=this.stack.length) return;
+        if(this.top+1 >= this.stack.length) return;
         let state=this.stack[++this.top];
         this.draw.applyState(state)
     }
@@ -176,3 +177,5 @@ class UndoStack
 const drawInst=new Draw()
 const undoInst=new UndoStack(drawInst)
 drawInst.setUndoInstance(undoInst);
+let blankState=ctx.getImageData(0, 0, canvas.width, canvas.height)
+undoInst.push(blankState);
