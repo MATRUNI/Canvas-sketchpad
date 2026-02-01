@@ -13,8 +13,6 @@ body{
 #container{
     height: 7rem;
     width: 35rem;
-    background-color: rgb(146, 146, 146);
-    border-radius: 1rem;
     z-index: 5;
     position: absolute;
     top: 1rem;
@@ -22,4 +20,35 @@ body{
     justify-content: center;
     align-items: center;
     justify-self: center;
+    gap: 1rem;
+    background: #1e1e2e;;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+
+#colorpick {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+}
+
+#colorpick::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#size {
+    width: 120px;
+    height: 6px;
+    appearance: none;
+    background: linear-gradient(to right,#bebcbc,#755efa);
+    border-radius: 2rem;
+    outline: none;
+    cursor: pointer;
 }
