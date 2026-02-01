@@ -93,22 +93,6 @@ class Draw
     }
     onMouseUp() 
     {
-        if(this.points.length===3)
-        {
-            const [p0,p1,p2]=this.points;
-            ctx.beginPath()
-            ctx.moveTo(p0.x, p0.y)
-            ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y)
-            ctx.stroke();
-        }
-        else if(this.points.length===2)
-        {
-            const [p0,p1]=this.points;
-            ctx.beginPath();
-            ctx.moveTo(p0.x, p0.y);
-            ctx.lineTo(p1.x, p1.y)
-            ctx.stroke()
-        }
         this.points=[];
         this.drawing=false;
         ctx.closePath();
@@ -116,7 +100,6 @@ class Draw
         {
             let snapshot=ctx.getImageData(0, 0, canvas.width, canvas.height)
             this.undo.push(snapshot);
-            console.log("snapshot")
         }
     }
 
