@@ -18,7 +18,8 @@ class Draw
     constructor()
     {
         this.drawing=false;
-        this.points=[]
+        this.points=[];
+        this.undo=null
         this.init();
     }
     init()
@@ -26,6 +27,10 @@ class Draw
         canvas.addEventListener("mousedown", (e)=> this.onMouseDown(e));
         canvas.addEventListener("mousemove", (e)=> this.onMouseMove(e));
         canvas.addEventListener("mouseup",()=> this.onMouseUp());
+    }
+    setUndoInstance(undoInst)
+    {
+        this.undo=undoInst
     }
     getMousePosition(e)
     {
@@ -104,10 +109,70 @@ class Draw
             ctx.lineTo(p1.x, p1.y)
             ctx.stroke()
         }
-        this.points=[]
+        this.points=[];
         this.drawing=false;
-        ctx.closePath()
+        ctx.closePath();
+        if(this.undo)
+        {
+            let snapshot=ctx.getImageData(0, 0, canvas.width, canvas.height)
+            this.undo.push(snapshot);
+            console.log("snapshot")
+        }
+    }
+
+    applyState(state)
+    {
+        ctx.putImageData(state, 0, 0)
     }
 }
-new Draw()
-console.log(canvas.width, canvas.height);
+class UndoStack
+{
+    constructor(drawInstance)
+    {
+        this.draw=drawInstance;
+        this.stack=[];
+        this.top=-1;
+        this.init();
+    }
+    init()
+    {
+        window.addEventListener("keydown", (e)=>this.keyAction(e))
+    }
+    keyAction(e)
+    {
+        if(e.ctrlKey&&e.key==="z")
+        {
+            e.preventDefault();
+            this.undo()
+        }
+        if(e.ctrlKey&&e.key==="y")
+        {
+            e.preventDefault();
+            this.redo()
+        }
+    }
+    push(value)
+    {
+        this.top++;
+        if(this.stack[this.top])
+        {
+            this.stack.length=this.top-1;
+        }
+        this.stack.push(value);
+    }
+    undo()
+    {
+        if(this.top===1) return;
+        let state=this.stack[--this.top];
+        this.draw.applyState(state)
+    }
+    redo()
+    {
+        if(this.top+1>=this.stack.length) return;
+        let state=this.stack[++this.top];
+        this.draw.applyState(state)
+    }
+}
+const drawInst=new Draw()
+const undoInst=new UndoStack(drawInst)
+drawInst.setUndoInstance(undoInst);
