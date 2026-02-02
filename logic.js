@@ -42,11 +42,11 @@ class Draw
     }
     getPointerPosition(e)
     {
-        let dpr=window.devicePixelRatio||1;
+        // let dpr=window.devicePixelRatio||1;
         let rc=canvas.getBoundingClientRect()
         return {
-            x:(e.clientX - rc.left)*dpr,
-            y:(e.clientY - rc.top)*dpr,
+            x:(e.clientX - rc.left),
+            y:(e.clientY - rc.top),
             pressure: e.pressure ?? 0.5,
             type: e.pointerType
         }
@@ -75,7 +75,6 @@ class Draw
         if(!this.drawing)
             return;
         const pos=this.getPointerPosition(e);
-        console.log(pos)
 
         const p = pos.pressure;
         this.lastPressure = this.lastPressure ?? p;
@@ -85,7 +84,13 @@ class Draw
         ctx.lineWidth = size.value * smoothPressure;
 
         this.brushPos = this.brushPos || pos;
+        const dx = pos.x - this.brushPos.x;
+        const dy = pos.y - this.brushPos.y;
+        const dist = Math.hypot(dx, dy);
+
+        const factor = Math.min(0.15 + dist / 50, 0.3);
         this.brushPos = this.smoothPoint(this.brushPos, pos, 0.15);
+
         const lastSmooth = this.points.length > 0 ? this.points[this.points.length - 1] : pos;
 
         const smooth=this.smoothPoint(lastSmooth,this.brushPos)
@@ -113,6 +118,8 @@ class Draw
     {
         this.points=[];
         this.drawing=false;
+        this.brushPos=null;
+        this.lastPressure=null
         ctx.closePath();
         if(this.undo)
         {
