@@ -117,3 +117,14 @@ body {
     text-transform: uppercase;
     font-weight: 600;
 }
+
+@media only screen and (max-width: 600px)
+{
+    body{
+        height: 100vh;
+    }
+    #canvas{
+        height: 100%;
+        background-color: rgb(255, 255, 255);
+    }
+}
