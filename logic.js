@@ -42,7 +42,6 @@ class Draw
     }
     getPointerPosition(e)
     {
-        // let dpr=window.devicePixelRatio||1;
         let rc=canvas.getBoundingClientRect()
         return {
             x:(e.clientX - rc.left),
@@ -51,68 +50,57 @@ class Draw
             type: e.pointerType
         }
     }
-    smoothPoint(prev, curr, factor = 0.25)
+    onPointerDown(e) 
     {
-        return {
-            x: prev.x * factor + curr.x * (1 - factor),
-            y: prev.y * factor + curr.y * (1 - factor)
-        };
-    }
-    onPointerDown(e)
-    {
-        ctx.strokeStyle=color.value;  // brush's color
-        ctx.lineWidth=size.value     // brush size
-        this.drawing=true;
-        const pos=this.getPointerPosition(e)
-        this.brushPos=pos
-        this.lastPressure=pos.pressure
-        this.points=[pos,pos]
-        ctx.beginPath();    // begin 
-        ctx.moveTo(pos.x, pos.y)    // from here
-    }
-    onPointerMove(e)
-    {
-        if(!this.drawing)
-            return;
-        const pos=this.getPointerPosition(e);
-
-        const p = pos.pressure;
-        this.lastPressure = this.lastPressure ?? p;
-        const smoothPressure = this.lastPressure * 0.7 + p * 0.3;
-        this.lastPressure = smoothPressure;
+        this.drawing = true;
+        const pos = this.getPointerPosition(e);
+        this.brushPos = pos;
+        this.lastPressure = pos.pressure;
+        this.points = [pos];
+        this.lastMidX = pos.x;
+        this.lastMidY = pos.y;
         
-        ctx.lineWidth = size.value * smoothPressure;
-
-        this.brushPos = this.brushPos || pos;
-        const dx = pos.x - this.brushPos.x;
-        const dy = pos.y - this.brushPos.y;
-        const dist = Math.hypot(dx, dy);
-
-        const factor = Math.min(0.15 + dist / 50, 0.3);
-        this.brushPos = this.smoothPoint(this.brushPos, pos, 0.15);
-
-        const lastSmooth = this.points.length > 0 ? this.points[this.points.length - 1] : pos;
-
-        const smooth=this.smoothPoint(lastSmooth,this.brushPos)
-        this.points.push(smooth)
-
-
-        if(this.points.length>=4)
-        {
-            this.drawBezier(this.points)
-            this.points.shift()
-        }
+        ctx.strokeStyle = color.value;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
     }
-    drawBezier([p0,p1,p2,p3])
+    onPointerMove(e) 
     {
-        const cp1x = p1.x + (p2.x - p0.x) / 6;
-        const cp1y = p1.y + (p2.y - p0.y) / 6;
-    
-        const cp2x = p2.x - (p3.x - p1.x) / 6;
-        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        if (!this.drawing) return;
 
-        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-        ctx.stroke();   // to this position
+        const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+
+        for (let event of events) {
+            const pos = this.getPointerPosition(event);
+
+        this.lastPressure = this.lastPressure ?? pos.pressure;
+        this.lastPressure = this.lastPressure * 0.5 + pos.pressure * 0.5;
+
+        this.points.push({ x: pos.x, y: pos.y, p: this.lastPressure });
+
+        if (this.points.length >= 3) {
+            const p1 = this.points[this.points.length - 2];
+            const p2 = this.points[this.points.length - 1];
+
+            const midX = (p1.x + p2.x) / 2;
+            const midY = (p1.y + p2.y) / 2;
+
+            ctx.beginPath();
+            ctx.lineWidth = size.value * p1.p;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+
+            ctx.moveTo(this.lastMidX, this.lastMidY);
+            ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+            ctx.stroke();
+
+            this.lastMidX = midX;
+            this.lastMidY = midY;
+
+            this.points.shift();
+            }
+        }
     }
     onPointerUp() 
     {
