@@ -122,9 +122,11 @@ body {
 {
     body{
         height: 100vh;
+        width: 100vw;
     }
     #canvas{
         height: 100%;
+        width: 100%;
         background-color: rgb(255, 255, 255);
     }
 }
