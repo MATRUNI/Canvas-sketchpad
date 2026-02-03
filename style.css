@@ -121,6 +121,28 @@ body {
     font-weight: 600;
 }
 
+#undo-container{
+    position: fixed;
+    left: 90%;
+    bottom: 40px;
+    display: flex;
+    gap: 1rem;
+}
+.undo-btn{
+    height: 4rem;
+    width: 4rem;
+    border-radius: 50%;
+    border: none;
+    background-color: #c9c9c9;
+    transition: all 0.3s ease;
+    font-size: large;
+    z-index: 10;
+}
+.undo-btn:hover{
+    background-color: #a7a7a7;
+    color: rgb(1, 247, 255);
+}
+
 @media only screen and (max-width: 600px)
 {
     body{
@@ -128,5 +150,12 @@ body {
     }
     #canvas{
         background-color: rgb(255, 255, 255);
+    }
+    #container{
+        left: 35%;
+    }
+    #undo-container{
+        left: 75%;
+        flex-direction: column;
     }
 }
