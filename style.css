@@ -16,11 +16,14 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    height: 100%;
+    width: 100%;
 }
 
 /* The Canvas - Your White Paper */
 #canvas {
+    height: 100vh;
+    width: 100vw;
     background: white;
     cursor: crosshair;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
@@ -121,12 +124,9 @@ body {
 @media only screen and (max-width: 600px)
 {
     body{
-        height: 100vh;
-        width: 100vw;
+        height: 100dvh;
     }
     #canvas{
-        height: 100%;
-        width: 100%;
         background-color: rgb(255, 255, 255);
     }
 }
