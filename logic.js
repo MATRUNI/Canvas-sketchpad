@@ -5,6 +5,7 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d",{willReadFrequently:true});
 const color=document.getElementById("colorpick");
 const size=document.getElementById('size');
+const undo=document.getElementById("undo-container")
 function resizeCanvas() {
     const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
@@ -30,11 +31,17 @@ class Draw
     }
     init()
     {
-        canvas.addEventListener("pointerdown", (e)=> this.onPointerDown(e));
+        canvas.addEventListener("pointerdown", (e)=>{
+            if(e.target !==canvas) return
+             this.onPointerDown(e)
+            });
         canvas.addEventListener("pointermove", (e)=> this.onPointerMove(e));
         canvas.addEventListener("pointerup",()=> this.onPointerUp());
         canvas.addEventListener("pointercancel", ()=> this.onPointerUp());
-        canvas.addEventListener("pointerout", ()=> this.onPointerUp());
+        canvas.addEventListener("pointerout", ()=>{ 
+            if(!this.drawing) return;
+            this.onPointerUp()
+        });
     }
     setUndoInstance(undoInst)
     {
@@ -175,3 +182,27 @@ const undoInst=new UndoStack(drawInst)
 drawInst.setUndoInstance(undoInst);
 let blankState=ctx.getImageData(0, 0, canvas.width, canvas.height)
 undoInst.push(blankState);
+
+class Listener
+{
+    constructor()
+    {
+        this.init()
+    }
+    init()
+    {
+        undo.addEventListener("click", e=>{
+            e.stopPropagation();
+            e.preventDefault();
+            if(e.target.textContent==="<-")
+            {
+                undoInst.undo()
+            }
+            else if(e.target.textContent==="->")
+            {
+                undoInst.redo()
+            }
+        })
+    }
+}
+new Listener()
