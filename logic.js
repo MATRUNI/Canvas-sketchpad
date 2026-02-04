@@ -24,8 +24,10 @@ class Draw
     {
         this.drawing=false;
         this.points=[];
+        this.strokes=[];
         this.undo=null
         this.brushPos=null
+        this.zom;
         this.lastPressure=null;
         this.init();
     }
@@ -50,9 +52,15 @@ class Draw
     getPointerPosition(e)
     {
         let rc=canvas.getBoundingClientRect()
+        let mouseX= e.clientX -rc.left;
+        let mouseY= e.clientY -rc.top;
+
+        let worldX= this.zom.camX + mouseX/this.zom.zoom;
+        let worldY= this.zom.camY + mouseY/this.zom.zoom;
+
         return {
-            x:(e.clientX - rc.left),
-            y:(e.clientY - rc.top),
+            x:worldX,
+            y:worldY,
             pressure: e.pressure ?? 0.5,
             type: e.pointerType
         }
@@ -105,12 +113,13 @@ class Draw
             this.lastMidX = midX;
             this.lastMidY = midY;
 
-            this.points.shift();
             }
         }
     }
     onPointerUp() 
     {
+        let newStroke=this.points.map(p=>({x:p.x, y:p.y ,p:p.pressure}));
+        this.strokes.push(newStroke)
         this.points=[];
         this.drawing=false;
         this.brushPos=null;
@@ -118,22 +127,22 @@ class Draw
         ctx.closePath();
         if(this.undo)
         {
-            let snapshot=ctx.getImageData(0, 0, canvas.width, canvas.height)
-            this.undo.push(snapshot);
+            this.undo.push(this.strokes);
         }
     }
 
-    applyState(state)
-    {
-        if(!state) return;
-        ctx.putImageData(state, 0, 0)
-    }
+        applyState(state)
+        {
+            if(!state) return;
+            ctx.putImageData(state, 0, 0)
+        }
 }
 class UndoStack
 {
-    constructor(drawInstance)
+    constructor(drawInstance,zom)
     {
         this.draw=drawInstance;
+        this.zom=zom;
         this.stack=[];
         this.top=-1;
         this.init();
@@ -162,26 +171,124 @@ class UndoStack
         {
             this.stack.length=this.top;
         }
-        this.stack.push(value);
+        this.stack.push(JSON.parse(JSON.stringify(value)));
     }
     undo()
     {
-        if(this.top===0) return;
-        let state=this.stack[--this.top];
-        this.draw.applyState(state)
+        if(this.top<0) return;
+        this.top--;
+        let state=JSON.parse(JSON.stringify(this.stack[this.top]));
+        this.draw.strokes=state;
+        this.zom.draw()
     }
     redo()
     {
         if(this.top+1 >= this.stack.length) return;
-        let state=this.stack[++this.top];
-        this.draw.applyState(state)
+        let state=JSON.parse(JSON.stringify(this.stack[++this.top]));
+        this.draw.strokes=state
+        this.zom.draw()
+    }
+}
+class Zoom
+{
+    constructor(drawInst)
+    {
+        this.ctx=ctx;
+        this.zoom=1
+        this.camX = -canvas.width / (2 * this.zoom);
+        this.camY = -canvas.height / (2 * this.zoom);
+        this.canvas=canvas;
+        this.drawins=drawInst
+        this.draw()
+    }
+    resetCanvas()
+    {
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+    applyCamera()
+    {
+        this.ctx.setTransform(this.zoom, 0, 0, this.zoom, this.zoom*-this.camX, this.zoom*-this.camY);
+    }
+
+    drawWorldGrid()
+    {
+        this.ctx.strokeStyle = "#ccc";
+        for (let x = -2000; x <= 2000; x += 100) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(x, -2000);
+          this.ctx.lineTo(x, 2000);
+          this.ctx.stroke();
+        }
+    
+        for (let y = -2000; y <= 2000; y += 100) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(-2000, y);
+          this.ctx.lineTo(2000, y);
+          this.ctx.stroke();
+        }
+    
+        this.ctx.fillStyle = "red";
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
+        this.ctx.fill();
+    }
+    draw()
+    {
+        this.resetCanvas();
+        this.applyCamera();
+        this.drawWorldGrid();
+
+        this.ctx.strokeStyle=color.value;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        for (let stroke of this.drawins.strokes) {
+            if (!stroke.length) continue;
+
+            ctx.beginPath();
+            ctx.moveTo(stroke[0].x, stroke[0].y);
+
+            for (let i = 1; i < stroke.length; i++) {
+                const p = stroke[i];
+                ctx.lineWidth = size.value * p.p;
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+        }
+    }
+
+    zooming(deltaY)
+    {
+        let zoomFactor=1.1;
+
+        let mouseX= this.canvas.width/2;
+        let mouseY= this.canvas.height/2;
+
+        let worldX= this.camX + mouseX /this.zoom;
+        let worldY= this.camY + mouseY /this.zoom;
+
+        if(deltaY>0)
+        {
+            this.zoom=this.zoom*zoomFactor
+        }
+        else
+        {
+            this.zoom=this.zoom/zoomFactor;
+        } 
+        
+        this.camX= worldX - mouseX/this.zoom;
+        this.camY= worldY - mouseY/this.zoom;
+
+        this.draw();
     }
 }
 const drawInst=new Draw()
-const undoInst=new UndoStack(drawInst)
+let zom=new Zoom(drawInst);
+const undoInst=new UndoStack(drawInst,zom)
 drawInst.setUndoInstance(undoInst);
-let blankState=ctx.getImageData(0, 0, canvas.width, canvas.height)
-undoInst.push(blankState);
+drawInst.zom=zom;
+
 
 class Listener
 {
@@ -202,6 +309,11 @@ class Listener
             {
                 undoInst.redo()
             }
+        });
+
+        canvas.addEventListener('wheel', (e)=>{
+            e.preventDefault();
+            zom.zooming(e.deltaY)
         })
     }
 }
