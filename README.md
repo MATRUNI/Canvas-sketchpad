@@ -1,4 +1,5 @@
 # Canvas-sketchpad
+## Live link: [Canvas-sketchpad](https://matruni.github.io/Canvas-sketchpad/)
 
 ## Ultra-Smooth Canvas Drawing App 🎨
 
@@ -100,4 +101,3 @@ No frameworks, no shortcuts — just **_pure JS magic_**
 - The joy of making code respond to your hand movement
 
 ### Author: MATRUNI (**_Himanshu Yadav_**)
-## Live link: [Canvas-sketchpad](https://matruni.github.io/Canvas-sketchpad/)
