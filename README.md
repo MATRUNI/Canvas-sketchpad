@@ -1,6 +1,24 @@
 # Canvas-sketchpad
 ## Live link: [Canvas-sketchpad](https://matruni.github.io/Canvas-sketchpad/)
 
+
+## Table of Content
+- [Overview](#-project-overview)
+- [Features & Achivement](#-features--achievements)
+    - [Jitter](#jitter-reduction)
+    - [Handling Edge Cases](#handling-edge-cases)
+    - [Brush Styling](#brush-styling)
+    - [Zooming (Future)](#zooming--coordinate-transformation-future-objectives)
+- [Tech Stack](#-tech-stack)
+- [How it Works](#-how-it-works)
+    - [Mouse Event Capturing](#mouse-event-capture)
+    - [Smoothing](#smoothing-algorithm)
+    - [Zoom & Pan](#zoom--pan-support-future)
+- [Personal notes](#personal-notes)
+- [Future Improvement](#-future-improvements)
+- [Usage](#usage)
+- [Inspiration](#inspiration)
+
 ## Ultra-Smooth Canvas Drawing App 🎨
 
 ### “The first time I made a digital brush feel **as smooth as my hand wanted it to be.” – Me**
@@ -25,24 +43,19 @@ Every line drawn is an exercise in making pixels obey the hand.
 
 ## 🎯 Features & Achievements
 
-1. Cubic Bezier Smoothing
-    -
-    - Implements a **sliding window of 4 points**
-    - **Dynamically calculates control points** for natural curves
-    - Makes every stroke look fluid and professional
-2. Jitter Reduction
+1. Jitter Reduction
     - 
     - **Uses a moving average filter** to smooth fast mouse movements
     - **Prevents jagged** edges and shaky lines
-3. Handling Edge Cases
+2. Handling Edge Cases
     -
     - **Ensures last points** don’t disappear when releasing the mouse
     - **Smoothly finishes strokes using quadratic and linear fallbacks**
-4. Brush Styling
+3. Brush Styling
     -
     - **Round line caps and joins** for smooth corners
     - **Adjustable line** width and color
-5. Zooming & Coordinate Transformation (**Future Objectives**)
+4. Zooming & Coordinate Transformation (**Future Objectives**)
     -
     - Scaling the canvas without breaking brush alignment 
     - Transforms mouse coordinates to match zoom level
@@ -63,15 +76,10 @@ No frameworks, no shortcuts — just **_pure JS magic_**
     - Stores every point in a **buffer array**
 2. Smoothing Algorithm
     -
-    - Uses 4 points for **cubic Bezier curves**
     - Optional moving average for **extra smoothness**
     - Draws each segment in **real-time**
 
-3. Final Stroke Handling
-    -
-    - **Remaining 2–3 points handled with quadratic or linear segments**
-    - **Prevents abrupt cut-offs** at the end of strokes
-4. Zoom & Pan Support (**Future**)
+3. Zoom & Pan Support (**Future**)
     -
     - Scales canvas without distorting strokes
     - Mouse coordinates transformed according to zoom/offset
@@ -87,7 +95,7 @@ No frameworks, no shortcuts — just **_pure JS magic_**
 
 ## 📌 Future Improvements
 
-# (**_IDK_**)
+### (**_IDK_**)
 
 ## Usage
 1. Open `index.html` in browser
