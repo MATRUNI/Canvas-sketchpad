@@ -6,8 +6,8 @@ const ctx = canvas.getContext("2d",{willReadFrequently:true});
 const color=document.getElementById("colorpick");
 const size=document.getElementById('size');
 const undo=document.getElementById("undo-container")
+const dpr = window.devicePixelRatio || 1;
 function resizeCanvas() {
-    const dpr = window.devicePixelRatio || 1;
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -52,8 +52,8 @@ class Draw
     getPointerPosition(e)
     {
         let rc=canvas.getBoundingClientRect()
-        let mouseX= e.clientX -rc.left;
-        let mouseY= e.clientY -rc.top;
+        let mouseX= (e.clientX -rc.left)*dpr;
+        let mouseY= (e.clientY -rc.top)*dpr;
 
         let worldX= this.zom.camX + mouseX/this.zom.zoom;
         let worldY= this.zom.camY + mouseY/this.zom.zoom;
@@ -71,7 +71,6 @@ class Draw
         const pos = this.getPointerPosition(e);
         this.brushPos = pos;
         this.lastPressure = pos.pressure;
-        this.points = [pos];
         this.lastMidX = pos.x;
         this.lastMidY = pos.y;
         
@@ -101,7 +100,7 @@ class Draw
             const midY = (p1.y + p2.y) / 2;
 
             ctx.beginPath();
-            ctx.lineWidth = size.value * p1.p;
+            ctx.lineWidth = size.value * (p1.p+p2.p)*0.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
@@ -163,7 +162,7 @@ class UndoStack
         this.top++;
         if(this.stack[this.top])
         {
-            this.stack.length=this.top-1;
+            this.stack.length=this.top;
         }
         this.stack.push(JSON.parse(JSON.stringify(value)));
     }
@@ -237,7 +236,7 @@ class Zoom
     {
         this.resetCanvas();
         this.applyCamera();
-        this.drawWorldGrid();
+        // this.drawWorldGrid();
 
         this.ctx.strokeStyle=color.value;
         ctx.lineCap = 'round';
