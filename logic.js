@@ -130,12 +130,6 @@ class Draw
             this.undo.push(this.strokes);
         }
     }
-
-        applyState(state)
-        {
-            if(!state) return;
-            ctx.putImageData(state, 0, 0)
-        }
 }
 class UndoStack
 {
@@ -169,7 +163,7 @@ class UndoStack
         this.top++;
         if(this.stack[this.top])
         {
-            this.stack.length=this.top;
+            this.stack.length=this.top-1;
         }
         this.stack.push(JSON.parse(JSON.stringify(value)));
     }
@@ -177,6 +171,12 @@ class UndoStack
     {
         if(this.top<0) return;
         this.top--;
+        if(this.top===-1)
+        {
+            this.draw.strokes=[];
+            this.zom.draw();
+            return;
+        }
         let state=JSON.parse(JSON.stringify(this.stack[this.top]));
         this.draw.strokes=state;
         this.zom.draw()
