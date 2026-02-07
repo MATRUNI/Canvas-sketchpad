@@ -4,6 +4,7 @@ const canvas = document.getElementById("canvas");
 /** @type {CanvasRenderingContext2D} */
 const ctx = canvas.getContext("2d",{willReadFrequently:true});
 const color=document.getElementById("colorpick");
+const bgColor=document.getElementById("colorpick1");
 const size=document.getElementById('size');
 const undo=document.getElementById("undo-container")
 const dpr = window.devicePixelRatio || 1;
@@ -313,7 +314,17 @@ class Listener
         canvas.addEventListener('wheel', (e)=>{
             e.preventDefault();
             zom.zooming(e.deltaY)
+        });
+
+        bgColor.addEventListener('input', (e)=>{
+            canvas.style.background=e.target.value;
+            e.target.blur
+
         })
+
+        // bgColor.onchange=function (){
+        //     bgColor.blur();
+        // }
     }
 }
 new Listener()
