@@ -30,6 +30,7 @@ class Draw
         this.brushPos=null
         this.zom;
         this.lastPressure=null;
+        this.line=null;
         this.init();
     }
     init()
@@ -101,6 +102,7 @@ class Draw
             const midY = (p1.y + p2.y) / 2;
 
             ctx.beginPath();
+            this.line=size.value * (p1.p+p2.p)*0.5;
             ctx.lineWidth = size.value * (p1.p+p2.p)*0.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -118,7 +120,7 @@ class Draw
     }
     onPointerUp() 
     {
-        let newStroke=this.points.map(p=>({x:p.x, y:p.y ,p:p.pressure}));
+        let newStroke=this.points.map(p=>({x:p.x, y:p.y ,p:p.pressure,s:this.line}));
         this.strokes.push(newStroke)
         this.points=[];
         this.drawing=false;
@@ -247,6 +249,7 @@ class Zoom
             if (!stroke.length) continue;
 
             ctx.beginPath();
+            ctx.lineWidth=stroke[0].s;
             ctx.moveTo(stroke[0].x, stroke[0].y);
 
             for (let i = 1; i < stroke.length; i++) {
@@ -321,10 +324,6 @@ class Listener
             e.target.blur
 
         })
-
-        // bgColor.onchange=function (){
-        //     bgColor.blur();
-        // }
     }
 }
 new Listener()
