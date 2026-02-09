@@ -102,8 +102,8 @@ class Draw
             const midY = (p1.y + p2.y) / 2;
 
             ctx.beginPath();
-            this.line=size.value * (p1.p+p2.p)*0.5;
-            ctx.lineWidth = size.value * (p1.p+p2.p)*0.5;
+            this.line=(size.value * (p1.p+p2.p)*0.5)/this.zom.zoom;
+            ctx.lineWidth = (size.value * (p1.p+p2.p)*0.5)/this.zom.zoom;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
