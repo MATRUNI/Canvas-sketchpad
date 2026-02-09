@@ -23,7 +23,7 @@ body {
 #canvas {
     height: 100vh;
     width: 100vw;
-    background: white;
+    background: rgb(0, 0, 0);
     cursor: crosshair;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
@@ -32,6 +32,7 @@ body {
 }
 
 #container {
+    width: 22rem;
     position: fixed;
     bottom: 30px;
     left: 50%;
@@ -102,6 +103,9 @@ body {
     background: var(--accent);
     transform: scale(1.2);
 }
+#size-value{
+    color: white;
+}
 
 #container::before {
     content: 'Brush Settings';
@@ -147,10 +151,12 @@ body {
         background-color: rgb(255, 255, 255);
     }
     #container{
-        left: 35%;
+        left: 50%;
     }
     #undo-container{
-        left: 75%;
+        left: 82%;
+        top: 5%;
         flex-direction: column;
+        color: #000000;
     }
 }
