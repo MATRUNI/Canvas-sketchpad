@@ -140,59 +140,59 @@ class Draw
         ctx.lineJoin = 'round';
     }
    onPointerMove(e) 
-{
-    if (!this.drawing) return;
-    if (!this.filterX || !this.filterY) return;
-
-    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-
-    for (let event of events) 
     {
-        const pos = this.getPointerPosition(event);
-        const time = performance.now();
-
-        const smoothX = this.filterX.filter(pos.x, time);
-        const smoothY = this.filterY.filter(pos.y, time);
-
-        // Micro-movement filter
-        if (this.points.length > 0) {
-            const prev = this.points[this.points.length - 1];
-            const dx = smoothX - prev.x;
-            const dy = smoothY - prev.y;
-            if (dx * dx + dy * dy < 0.01) continue;
-        }
-
-        // Pressure smoothing
-        this.lastPressure = this.lastPressure == null
-            ? pos.pressure
-            : this.lastPressure * 0.5 + pos.pressure * 0.5;
-
-        this.points.push({ x: smoothX, y: smoothY, p: this.lastPressure });
-
-        if (this.points.length >= 3) 
+        if (!this.drawing) return;
+        if (!this.filterX || !this.filterY) return;
+    
+        const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    
+        for (let event of events) 
         {
-            const p1 = this.points[this.points.length - 2];
-            const p2 = this.points[this.points.length - 1];
-
-            const midX = (p1.x + p2.x) / 2;
-            const midY = (p1.y + p2.y) / 2;
-
-            ctx.beginPath();
-
-            this.line = (size.value * (p1.p + p2.p) * 0.5) / this.zom.zoom;
-            ctx.lineWidth = this.line;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            ctx.moveTo(this.lastMidX, this.lastMidY);
-            ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
-            ctx.stroke();
-
-            this.lastMidX = midX;
-            this.lastMidY = midY;
+            const pos = this.getPointerPosition(event);
+            const time = performance.now();
+        
+            const smoothX = this.filterX.filter(pos.x, time);
+            const smoothY = this.filterY.filter(pos.y, time);
+        
+            // Micro-movement filter
+            if (this.points.length > 0) {
+                const prev = this.points[this.points.length - 1];
+                const dx = smoothX - prev.x;
+                const dy = smoothY - prev.y;
+                if (dx * dx + dy * dy < 0.01) continue;
+            }
+        
+            // Pressure smoothing
+            this.lastPressure = this.lastPressure == null
+                ? pos.pressure
+                : this.lastPressure * 0.5 + pos.pressure * 0.5;
+        
+            this.points.push({ x: smoothX, y: smoothY, p: this.lastPressure });
+        
+            if (this.points.length >= 3) 
+            {
+                const p1 = this.points[this.points.length - 2];
+                const p2 = this.points[this.points.length - 1];
+            
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+            
+                ctx.beginPath();
+            
+                this.line = (size.value * (p1.p + p2.p) * 0.5) / this.zom.zoom;
+                ctx.lineWidth = this.line;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+            
+                ctx.moveTo(this.lastMidX, this.lastMidY);
+                ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
+                ctx.stroke();
+            
+                this.lastMidX = midX;
+                this.lastMidY = midY;
+            }
         }
     }
-}
 
     onPointerUp() 
     {
