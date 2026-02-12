@@ -19,6 +19,59 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
+
+class OneEuroFilter {
+    constructor(freq = 120, minCutoff = 1.2, beta = 0.01, dCutoff = 1.0) {
+        this.freq = freq;
+        this.minCutoff = minCutoff;
+        this.beta = beta;
+        this.dCutoff = dCutoff;
+
+        this.xPrev = null;
+        this.dxPrev = 0;
+        this.lastTime = null;
+    }
+
+    alpha(cutoff) {
+        const te = 1.0 / this.freq;
+        const tau = 1.0 / (2 * Math.PI * cutoff);
+        return 1.0 / (1.0 + tau / te);
+    }
+
+    filter(x, time) 
+    {
+
+        if (this.lastTime === null) {
+            this.lastTime = time;
+            this.xPrev = x;
+            return x;
+        }
+
+        let dt = (time - this.lastTime) / 1000;
+
+        if (dt <= 0) dt = 1 / 120;   // fallback to 120hz
+
+        this.freq = 1.0 / dt;
+        this.lastTime = time;
+
+        const dx = (x - this.xPrev) * this.freq;
+
+        const alphaD = this.alpha(this.dCutoff);
+        const dxHat = alphaD * dx + (1 - alphaD) * this.dxPrev;
+
+        const cutoff = this.minCutoff + this.beta * Math.abs(dxHat);
+        const alpha = this.alpha(cutoff);
+
+        const xHat = alpha * x + (1 - alpha) * this.xPrev;
+
+        this.xPrev = xHat;
+        this.dxPrev = dxHat;
+
+        return xHat;
+    }
+
+}
+
 class Draw
 {
     constructor()
@@ -31,6 +84,8 @@ class Draw
         this.zom;
         this.lastPressure=null;
         this.line=null;
+        this.filterX = null;
+        this.filterY = null;
         this.init();
     }
     init()
@@ -71,6 +126,10 @@ class Draw
     {
         this.drawing = true;
         const pos = this.getPointerPosition(e);
+
+        this.filterX= new OneEuroFilter();
+        this.filterY= new OneEuroFilter();
+
         this.brushPos = pos;
         this.lastPressure = pos.pressure;
         this.lastMidX = pos.x;
@@ -80,21 +139,38 @@ class Draw
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
     }
-    onPointerMove(e) 
+   onPointerMove(e) 
+{
+    if (!this.drawing) return;
+    if (!this.filterX || !this.filterY) return;
+
+    const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+
+    for (let event of events) 
     {
-        if (!this.drawing) return;
+        const pos = this.getPointerPosition(event);
+        const time = performance.now();
 
-        const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+        const smoothX = this.filterX.filter(pos.x, time);
+        const smoothY = this.filterY.filter(pos.y, time);
 
-        for (let event of events) {
-            const pos = this.getPointerPosition(event);
+        // Micro-movement filter
+        if (this.points.length > 0) {
+            const prev = this.points[this.points.length - 1];
+            const dx = smoothX - prev.x;
+            const dy = smoothY - prev.y;
+            if (dx * dx + dy * dy < 0.01) continue;
+        }
 
-        this.lastPressure = this.lastPressure ?? pos.pressure;
-        this.lastPressure = this.lastPressure * 0.5 + pos.pressure * 0.5;
+        // Pressure smoothing
+        this.lastPressure = this.lastPressure == null
+            ? pos.pressure
+            : this.lastPressure * 0.5 + pos.pressure * 0.5;
 
-        this.points.push({ x: pos.x, y: pos.y, p: this.lastPressure });
+        this.points.push({ x: smoothX, y: smoothY, p: this.lastPressure });
 
-        if (this.points.length >= 3) {
+        if (this.points.length >= 3) 
+        {
             const p1 = this.points[this.points.length - 2];
             const p2 = this.points[this.points.length - 1];
 
@@ -102,11 +178,11 @@ class Draw
             const midY = (p1.y + p2.y) / 2;
 
             ctx.beginPath();
-            this.line=(size.value * (p1.p+p2.p)*0.5)/this.zom.zoom;
-            ctx.lineWidth = (size.value * (p1.p+p2.p)*0.5)/this.zom.zoom;
+
+            this.line = (size.value * (p1.p + p2.p) * 0.5) / this.zom.zoom;
+            ctx.lineWidth = this.line;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-
 
             ctx.moveTo(this.lastMidX, this.lastMidY);
             ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
@@ -114,10 +190,10 @@ class Draw
 
             this.lastMidX = midX;
             this.lastMidY = midY;
-
-            }
         }
     }
+}
+
     onPointerUp() 
     {
         let newStroke=this.points.map(p=>({x:p.x, y:p.y ,p:p.pressure,s:this.line}));
