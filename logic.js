@@ -21,11 +21,12 @@ ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
 
 class OneEuroFilter {
-    constructor(freq = 120, minCutoff = 1.2, beta = 0.01, dCutoff = 1.0) {
+    constructor(freq = 120, minCutoff = 1.8, beta = 0.00, dCutoff = 1.0) {
         this.freq = freq;
         this.minCutoff = minCutoff;
         this.beta = beta;
         this.dCutoff = dCutoff;
+        this.rawPrev = null;
 
         this.xPrev = null;
         this.dxPrev = 0;
@@ -38,37 +39,40 @@ class OneEuroFilter {
         return 1.0 / (1.0 + tau / te);
     }
 
-    filter(x, time) 
-    {
+filter(x, time) {
 
-        if (this.lastTime === null) {
-            this.lastTime = time;
-            this.xPrev = x;
-            return x;
-        }
-
-        let dt = (time - this.lastTime) / 1000;
-
-        if (dt <= 0) dt = 1 / 120;   // fallback to 120hz
-
-        this.freq = 1.0 / dt;
+    if (this.lastTime === null) {
         this.lastTime = time;
-
-        const dx = (x - this.xPrev) * this.freq;
-
-        const alphaD = this.alpha(this.dCutoff);
-        const dxHat = alphaD * dx + (1 - alphaD) * this.dxPrev;
-
-        const cutoff = this.minCutoff + this.beta * Math.abs(dxHat);
-        const alpha = this.alpha(cutoff);
-
-        const xHat = alpha * x + (1 - alpha) * this.xPrev;
-
-        this.xPrev = xHat;
-        this.dxPrev = dxHat;
-
-        return xHat;
+        this.xPrev = x;
+        this.rawPrev = x;   // store raw
+        return x;
     }
+
+    let dt = (time - this.lastTime) / 1000;
+    if (dt <= 0) dt = 1 / 120;
+    dt = Math.max(dt, 1 / 240);
+
+    this.freq = 1.0 / dt;
+    this.lastTime = time;
+
+    // ✅ compute velocity from RAW signal
+    const dx = (x - this.rawPrev) * this.freq;
+    this.rawPrev = x;
+
+    const alphaD = this.alpha(this.dCutoff);
+    const dxHat = alphaD * dx + (1 - alphaD) * this.dxPrev;
+
+    const cutoff = this.minCutoff + this.beta * Math.abs(dxHat);
+    const alpha = this.alpha(cutoff);
+
+    const xHat = alpha * x + (1 - alpha) * this.xPrev;
+
+    this.xPrev = xHat;
+    this.dxPrev = dxHat;
+
+    return xHat;
+}
+
 
 }
 
@@ -149,7 +153,7 @@ class Draw
         for (let event of events) 
         {
             const pos = this.getPointerPosition(event);
-            const time = performance.now();
+            const time = e.timeStamp;
         
             const smoothX = this.filterX.filter(pos.x, time);
             const smoothY = this.filterY.filter(pos.y, time);
