@@ -225,12 +225,12 @@ class UndoStack
     }
     keyAction(e)
     {
-        if(e.ctrlKey&&e.key==="z")
+        if(e.ctrlKey&&(e.key==="z" || e.key==="Z"))
         {
             e.preventDefault();
             this.undo()
         }
-        if(e.ctrlKey&&e.key==="y")
+        if(e.ctrlKey&&(e.key==="y" || e.key==="Y"))
         {
             e.preventDefault();
             this.redo()
