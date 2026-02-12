@@ -1,111 +1,144 @@
 # Canvas-sketchpad
-## Live link: [Canvas-sketchpad](https://matruni.github.io/Canvas-sketchpad/)
+## A High-Performance Drawing Engine Built with Vanilla JavaScript
+## 🔗 Live Demo: [Canvas-sketchpad](https://matruni.github.io/Canvas-sketchpad/)
 
 
-## Table of Content
-- [Overview](#-project-overview)
-- [Features & Achivement](#-features--achievements)
-    - [Jitter](#jitter-reduction)
-    - [Handling Edge Cases](#handling-edge-cases)
-    - [Brush Styling](#brush-styling)
-    - [Zooming (Future)](#zooming--coordinate-transformation-future-objectives)
-- [Tech Stack](#-tech-stack)
-- [How it Works](#-how-it-works)
-    - [Mouse Event Capturing](#mouse-event-capture)
-    - [Smoothing](#smoothing-algorithm)
-    - [Zoom & Pan](#zoom--pan-support-future)
-- [Personal notes](#personal-notes)
-- [Future Improvement](#-future-improvements)
+## Table of Contents
+
+- [Project Overview](#project-overview)
+- [Core Features](#core-features)
+- [Tech Stack](#tech-stack)
+- [How It Works](#how-it-works)
+- [Future Improvements](#future-improvements)
 - [Usage](#usage)
-- [Inspiration](#inspiration)
+- [Personal Milestone](#personal-milestone)
+- [Author](#author)
 
-## Ultra-Smooth Canvas Drawing App 🎨
+---
 
-### “The first time I made a digital brush feel **as smooth as my hand wanted it to be.” – Me**
 
-## 🚀 Project Overview
+# Project Overview
 
-### This project is a full-screen drawing canvas built in plain JavaScript, designed to replicate the smoothness of professional drawing apps.
+Canvas Sketchpad is a browser-based drawing engine built entirely with **HTML5 Canvas and vanilla JavaScript**.
 
-It supports:
+What started as a curiosity project — “How smooth can I make a digital brush feel?” — evolved into implementing:
+-
+- Adaptive stroke smoothing using the One Euro Filter
 
-- **Smooth freehand strokes** using cubic Bezier curves
+- Pressure-sensitive brush rendering
+- Quadratic curve interpolation
+    
+- A zoomable world-space camera system
+    
+- Undo/redo state management
+- High-DPI rendering optimizations
 
-- **Real-time drawing** with the mouse
+This project focuses on recreating the natural fluidity of professional drawing tools — from scratch.
 
-- **Moving average point smoothing** to reduce jitter
 
-- **Dynamic brush size, color, and line styling**
+# Core Features
 
-- **Zooming and panning** (planned/future)
+### 🖌 Smooth Stroke Rendering
+- One Euro Filter for adaptive jitter reduction
+- Quadratic curve interpolation for natural stroke transitions
+- Micro-movement filtering to remove noise
 
-Every line drawn is an exercise in making pixels obey the hand.
+### 🎚 Pressure-Sensitive Drawing
+- Dynamic brush thickness based on pointer pressure
+- Smoothed pressure blending between points
+- Zoom-aware brush scaling
 
-## 🎯 Features & Achievements
+### 🔄 Undo / Redo System
+- Stack-based state history
+- Deep-cloned stroke snapshots
+- Keyboard shortcuts (Ctrl+Z / Ctrl+Y)
 
-1. Jitter Reduction
-    - 
-    - **Uses a moving average filter** to smooth fast mouse movements
-    - **Prevents jagged** edges and shaky lines
-2. Handling Edge Cases
-    -
-    - **Ensures last points** don’t disappear when releasing the mouse
-    - **Smoothly finishes strokes using quadratic and linear fallbacks**
-3. Brush Styling
-    -
-    - **Round line caps and joins** for smooth corners
-    - **Adjustable line** width and color
-4. Zooming & Coordinate Transformation (**Future Objectives**)
-    -
-    - Scaling the canvas without breaking brush alignment 
-    - Transforms mouse coordinates to match zoom level
+### 🔍 Zoomable Camera System
+- World-space coordinate rendering
+- Transform-based camera scaling
+- Center-focused zoom logic
+- Stroke rendering preserved across zoom levels
 
-## 🛠 Tech Stack
+### ⚡ Performance Optimizations
+- High-DPI support using devicePixelRatio
+- Pointer Events API
+- getCoalescedEvents() for smoother input tracking
+- Canvas context optimization (willReadFrequently)
+---
+
+# Tech Stack
 
 - **HTML5 Canvas API** – rendering & drawing
 - **Vanilla JavaScript** – logic for strokes, smoothing, zoom
 - **CSS** – full-screen canvas setup & simple styling
+- Pointer Event API
+- Mathematical interpolation & single filtering
 
-No frameworks, no shortcuts — just **_pure JS magic_**
+No external libraries.
 
-## 📖 How It Works
+No frameworks.
 
-1. Mouse Event Capture
-    -
-    - **Tracks mousedown, mousemove, mouseup**
-    - Stores every point in a **buffer array**
-2. Smoothing Algorithm
-    -
-    - Optional moving average for **extra smoothness**
-    - Draws each segment in **real-time**
+Just raw rendering logic and math.
 
-3. Zoom & Pan Support (**Future**)
-    -
-    - Scales canvas without distorting strokes
-    - Mouse coordinates transformed according to zoom/offset
+# How It Works
 
-# Personal notes
+### 1️⃣ Pointer Event Handling
+Uses the Pointer Events API to capture input from mouse, touch, and stylus devices. Coalesced events are used for high-frequency input tracking.
 
-### This project isn’t just a canvas
-- It’s where I first turned **math + mouse** input into art
-- It’s the first time I implemented a **smoothing algorithm that actually worked**
-- Every **Bezier curve is a small victory**, every smooth stroke a milestone
+### 2️⃣ Stroke Smoothing
+The One Euro Filter dynamically adjusts smoothing based on stroke speed:
+- Low speed → more smoothing
+- High speed → less smoothing
+
+This preserves responsiveness while eliminating jitter.
+
+### 3️⃣ Curve Rendering
+Instead of connecting points with straight lines, quadratic Bézier interpolation is used to create fluid stroke segments.
+
+### 4️⃣ Camera Transform System
+A custom zoomable camera transforms screen coordinates into world coordinates, allowing infinite canvas-style scaling without distorting strokes.
+
+# Future Improvements
+- Stroke selection & editing
+- Export drawing as image
+- Layer system
+- Touch gesture panning
+- Performance profiling for large stroke counts
+---
+
+# Usage
+
+1. Open the live link or run `index.html` locally.
+2. Draw using mouse, stylus, or touch input.
+3. Adjust brush size and color using the UI controls.
+4. Use Ctrl+Z / Ctrl+Y for undo/redo.
+5. Use mouse wheel to zoom.
+---
+
+# Personal MileStone
+
+
+This project started small.
+
+I didn’t plan for signal filtering.
+I didn’t plan for camera transforms.
+I didn’t plan for pressure-sensitive math.
+
+I was just curious.
+
+But somewhere between debugging jitter and tuning smoothing constants, I realized something:
+
+This was the first time I made code respond to my hand — not just logically, but physically.
+
+This is where math, rendering, and creativity met.
+
+Future me —
+Remember this project.
+This is where your brush stopped being pixels and started feeling real.
 
 **_Future me: remember this. This is where your coding and creativity met._**
 
-## 📌 Future Improvements
 
-### (**_IDK_**)
 
-## Usage
-1. Open `index.html` in browser
-2. Start Drawing with your mouse
-3. Adjust brush/colour in the `ctx` (in js file)
-4. Zooming and panning (future feature)
-
-## Inspiration
-- Smooth drawing apps like `Excalidraw, Figma, Photoshop`
-- Understanding Bezier curves and point interpolation
-- The joy of making code respond to your hand movement
-
-### Author: MATRUNI (**_Himanshu Yadav_**)
+# Author
+###  MATRUNI (**_Himanshu Yadav_**)
