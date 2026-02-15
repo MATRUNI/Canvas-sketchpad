@@ -103,7 +103,7 @@ class Draw
         if (!this.points.length) return;
 
         const stroke = getStroke(this.points, {
-            size: size.value,
+            size: size.value/this.zom.zoom,
             thinning: 0.7,
             smoothing: 0.5,
             streamline: 0.5,
@@ -242,7 +242,7 @@ class Zoom
         // draw current live stroke
         if (this.drawins.points.length > 1) {
             const liveStroke = getStroke(this.drawins.points, {
-                size: size.value,
+                size: size.value/this.zoom,
                 thinning: 0.7,
                 smoothing: 0.5,
                 streamline: 0.5,
@@ -263,7 +263,7 @@ class Zoom
             this.ctx.lineTo(stroke[i][0], stroke[i][1]);
         }
 
-        this.ctx.closePath();
+        // this.ctx.closePath();
         this.ctx.fill();
     }
 
