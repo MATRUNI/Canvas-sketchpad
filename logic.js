@@ -1,3 +1,5 @@
+import { getStroke } from "https://esm.sh/perfect-freehand";
+
 /** @type {HTMLCanvasElement} */
 const canvas = document.getElementById("canvas");
 
@@ -19,63 +21,6 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
-
-class OneEuroFilter {
-    constructor(freq = 120, minCutoff = 1.8, beta = 0.00, dCutoff = 1.0) {
-        this.freq = freq;
-        this.minCutoff = minCutoff;
-        this.beta = beta;
-        this.dCutoff = dCutoff;
-        this.rawPrev = null;
-
-        this.xPrev = null;
-        this.dxPrev = 0;
-        this.lastTime = null;
-    }
-
-    alpha(cutoff) {
-        const te = 1.0 / this.freq;
-        const tau = 1.0 / (2 * Math.PI * cutoff);
-        return 1.0 / (1.0 + tau / te);
-    }
-
-filter(x, time) {
-
-    if (this.lastTime === null) {
-        this.lastTime = time;
-        this.xPrev = x;
-        this.rawPrev = x;   // store raw
-        return x;
-    }
-
-    let dt = (time - this.lastTime) / 1000;
-    if (dt <= 0) dt = 1 / 120;
-    dt = Math.max(dt, 1 / 240);
-
-    this.freq = 1.0 / dt;
-    this.lastTime = time;
-
-    // ✅ compute velocity from RAW signal
-    const dx = (x - this.rawPrev) * this.freq;
-    this.rawPrev = x;
-
-    const alphaD = this.alpha(this.dCutoff);
-    const dxHat = alphaD * dx + (1 - alphaD) * this.dxPrev;
-
-    const cutoff = this.minCutoff + this.beta * Math.abs(dxHat);
-    const alpha = this.alpha(cutoff);
-
-    const xHat = alpha * x + (1 - alpha) * this.xPrev;
-
-    this.xPrev = xHat;
-    this.dxPrev = dxHat;
-
-    return xHat;
-}
-
-
-}
-
 class Draw
 {
     constructor()
@@ -88,8 +33,6 @@ class Draw
         this.zom;
         this.lastPressure=null;
         this.line=null;
-        this.filterX = null;
-        this.filterY = null;
         this.init();
     }
     init()
@@ -130,10 +73,6 @@ class Draw
     {
         this.drawing = true;
         const pos = this.getPointerPosition(e);
-
-        this.filterX= new OneEuroFilter();
-        this.filterY= new OneEuroFilter();
-
         this.brushPos = pos;
         this.lastPressure = pos.pressure;
         this.lastMidX = pos.x;
@@ -143,72 +82,44 @@ class Draw
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
     }
-   onPointerMove(e) 
-    {
+    onPointerMove(e) {
         if (!this.drawing) return;
-        if (!this.filterX || !this.filterY) return;
-    
+
         const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
-    
-        for (let event of events) 
-        {
+
+        for (let event of events) {
             const pos = this.getPointerPosition(event);
-            const time = e.timeStamp;
-        
-            const smoothX = this.filterX.filter(pos.x, time);
-            const smoothY = this.filterY.filter(pos.y, time);
-        
-            // Micro-movement filter
-            if (this.points.length > 0) {
-                const prev = this.points[this.points.length - 1];
-                const dx = smoothX - prev.x;
-                const dy = smoothY - prev.y;
-                if (dx * dx + dy * dy < 0.01) continue;
-            }
-        
-            // Pressure smoothing
-            this.lastPressure = this.lastPressure == null
-                ? pos.pressure
-                : this.lastPressure * 0.5 + pos.pressure * 0.5;
-        
-            this.points.push({ x: smoothX, y: smoothY, p: this.lastPressure });
-        
-            if (this.points.length >= 3) 
-            {
-                const p1 = this.points[this.points.length - 2];
-                const p2 = this.points[this.points.length - 1];
-            
-                const midX = (p1.x + p2.x) / 2;
-                const midY = (p1.y + p2.y) / 2;
-            
-                ctx.beginPath();
-            
-                this.line = (size.value * (p1.p + p2.p) * 0.5) / this.zom.zoom;
-                ctx.lineWidth = this.line;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-            
-                ctx.moveTo(this.lastMidX, this.lastMidY);
-                ctx.quadraticCurveTo(p1.x, p1.y, midX, midY);
-                ctx.stroke();
-            
-                this.lastMidX = midX;
-                this.lastMidY = midY;
-            }
+
+            this.lastPressure = this.lastPressure ?? pos.pressure;
+            this.lastPressure = this.lastPressure * 0.5 + pos.pressure * 0.5;
+
+            this.points.push([pos.x, pos.y, this.lastPressure]);
         }
+
+        this.zom.draw(); // just re-render
     }
 
-    onPointerUp() 
-    {
-        let newStroke=this.points.map(p=>({x:p.x, y:p.y ,p:p.pressure,s:this.line}));
-        this.strokes.push(newStroke)
-        this.points=[];
-        this.drawing=false;
-        this.brushPos=null;
-        this.lastPressure=null
-        ctx.closePath();
-        if(this.undo)
-        {
+    onPointerUp() {
+        if (!this.points.length) return;
+
+        const stroke = getStroke(this.points, {
+            size: size.value,
+            thinning: 0.7,
+            smoothing: 0.5,
+            streamline: 0.5,
+            simulatePressure: false
+        });
+
+        this.strokes.push({
+            stroke,
+            color: color.value
+        });
+
+        this.points = [];
+        this.drawing = false;
+        this.lastPressure = null;
+        this.zom.draw();
+        if (this.undo) {
             this.undo.push(this.strokes);
         }
     }
@@ -229,12 +140,12 @@ class UndoStack
     }
     keyAction(e)
     {
-        if(e.ctrlKey&&(e.key==="z" || e.key==="Z"))
+        if(e.ctrlKey&&e.key==="z")
         {
             e.preventDefault();
             this.undo()
         }
-        if(e.ctrlKey&&(e.key==="y" || e.key==="Y"))
+        if(e.ctrlKey&&e.key==="y")
         {
             e.preventDefault();
             this.redo()
@@ -290,7 +201,7 @@ class Zoom
     }
     applyCamera()
     {
-        this.ctx.setTransform(this.zoom, 0, 0, this.zoom, this.zoom*-this.camX, this.zoom*-this.camY);
+        this.ctx.setTransform(this.zoom*dpr, 0, 0, this.zoom*dpr, this.zoom*dpr*-this.camX, this.zoom*dpr*-this.camY);
     }
 
     drawWorldGrid()
@@ -315,38 +226,53 @@ class Zoom
         this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
         this.ctx.fill();
     }
-    draw()
+
+    draw() 
     {
         this.resetCanvas();
         this.applyCamera();
-        // this.drawWorldGrid();
+        // this.drawWorldGrid()
 
-        this.ctx.strokeStyle=color.value;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
-        for (let stroke of this.drawins.strokes) {
-            if (!stroke.length) continue;
-
-            ctx.beginPath();
-            ctx.lineWidth=stroke[0].s;
-            ctx.moveTo(stroke[0].x, stroke[0].y);
-
-            for (let i = 1; i < stroke.length; i++) {
-                const p = stroke[i];
-                ctx.lineWidth = size.value * p.p;
-                ctx.lineTo(p.x, p.y);
-            }
-            ctx.stroke();
+        // draw saved strokes
+        for (let s of this.drawins.strokes) {
+            this.ctx.fillStyle = s.color;
+            this.drawStroke(s.stroke);
         }
+
+        // draw current live stroke
+        if (this.drawins.points.length > 1) {
+            const liveStroke = getStroke(this.drawins.points, {
+                size: size.value,
+                thinning: 0.7,
+                smoothing: 0.5,
+                streamline: 0.5,
+                simulatePressure: false
+            });
+
+            this.ctx.fillStyle = color.value;
+            this.drawStroke(liveStroke);
+        }
+    }
+    drawStroke(stroke) {
+        if (!stroke.length) return;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(stroke[0][0], stroke[0][1]);
+
+        for (let i = 1; i < stroke.length; i++) {
+            this.ctx.lineTo(stroke[i][0], stroke[i][1]);
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill();
     }
 
     zooming(deltaY)
     {
         let zoomFactor=1.1;
 
-        let mouseX= this.canvas.width/2;
-        let mouseY= this.canvas.height/2;
+        let mouseX= (this.canvas.width/dpr)/2;
+        let mouseY= (this.canvas.height/dpr)/2;
 
         let worldX= this.camX + mouseX /this.zoom;
         let worldY= this.camY + mouseY /this.zoom;
