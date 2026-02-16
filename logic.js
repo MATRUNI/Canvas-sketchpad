@@ -59,8 +59,8 @@ class Draw
         let mouseX= (e.clientX -rc.left)*dpr;
         let mouseY= (e.clientY -rc.top)*dpr;
 
-        let worldX= this.zom.camX + mouseX/this.zom.zoom;
-        let worldY= this.zom.camY + mouseY/this.zom.zoom;
+        let worldX= this.zom.camX + mouseX/(this.zom.zoom*dpr);
+        let worldY= this.zom.camY + mouseY/(this.zom.zoom*dpr);
 
         return {
             x:worldX,
@@ -101,12 +101,12 @@ class Draw
 
     onPointerUp() {
         if (!this.points.length) return;
-
+        const zoomFactor = Math.max(1, this.zom.zoom);
         const stroke = getStroke(this.points, {
             size: size.value/this.zom.zoom,
             thinning: 0.7,
-            smoothing: 0.5,
-            streamline: 0.5,
+            smoothing: 0.5 / zoomFactor,
+            streamline: 0.5 / zoomFactor,
             simulatePressure: false
         });
 
@@ -120,7 +120,7 @@ class Draw
         this.lastPressure = null;
         this.zom.draw();
         if (this.undo) {
-            this.undo.push(stroke);
+            this.undo.push(stroke,color.value);
         }
     }
 }
@@ -151,14 +151,14 @@ class UndoStack
             this.redo()
         }
     }
-    push(stroke)
+    push(stroke,color)
     {
         this.top++;
         if(this.stack[this.top])
         {
             this.stack.length=this.top;
         }
-        this.stack.push({type:"add",stroke});
+        this.stack.push({type:"add",stroke,color:color});
     }
     undo()
     {
