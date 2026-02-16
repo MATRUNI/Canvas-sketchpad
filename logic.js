@@ -73,10 +73,10 @@ class Draw
     {
         this.drawing = true;
         const pos = this.getPointerPosition(e);
-        this.brushPos = pos;
+        // this.brushPos = pos;
         this.lastPressure = pos.pressure;
-        this.lastMidX = pos.x;
-        this.lastMidY = pos.y;
+        // this.lastMidX = pos.x;
+        // this.lastMidY = pos.y;
         
         ctx.strokeStyle = color.value;
         ctx.lineCap = 'round';
@@ -120,7 +120,7 @@ class Draw
         this.lastPressure = null;
         this.zom.draw();
         if (this.undo) {
-            this.undo.push(this.strokes);
+            this.undo.push(stroke);
         }
     }
 }
@@ -151,34 +151,35 @@ class UndoStack
             this.redo()
         }
     }
-    push(value)
+    push(stroke)
     {
         this.top++;
         if(this.stack[this.top])
         {
             this.stack.length=this.top;
         }
-        this.stack.push(JSON.parse(JSON.stringify(value)));
+        this.stack.push({type:"add",stroke});
     }
     undo()
     {
         if(this.top<0) return;
-        this.top--;
-        if(this.top===-1)
+        
+        const operation=this.stack[this.top--]
+        if(operation.type === "add")
         {
-            this.draw.strokes=[];
-            this.zom.draw();
-            return;
+            this.draw.strokes.pop();
         }
-        let state=JSON.parse(JSON.stringify(this.stack[this.top]));
-        this.draw.strokes=state;
         this.zom.draw()
     }
     redo()
     {
         if(this.top+1 >= this.stack.length) return;
-        let state=JSON.parse(JSON.stringify(this.stack[++this.top]));
-        this.draw.strokes=state
+
+        const op=this.stack[++this.top];
+        if(op.type === "add")
+        {
+            this.draw.strokes.push(op)
+        }
         this.zom.draw()
     }
 }
@@ -263,7 +264,7 @@ class Zoom
             this.ctx.lineTo(stroke[i][0], stroke[i][1]);
         }
 
-        // this.ctx.closePath();
+        this.ctx.closePath();
         this.ctx.fill();
     }
 
@@ -293,7 +294,7 @@ class Zoom
     }
 }
 const drawInst=new Draw()
-let zom=new Zoom(drawInst);
+const zom=new Zoom(drawInst);
 const undoInst=new UndoStack(drawInst,zom)
 drawInst.setUndoInstance(undoInst);
 drawInst.zom=zom;
