@@ -268,12 +268,12 @@ class Zoom
         this.ctx.fill();
     }
 
-    zooming(deltaY)
+    zooming(deltaY,mousePosX,mousePosY)
     {
         let zoomFactor=1.1;
-
-        let mouseX= (this.canvas.width/dpr)/2;
-        let mouseY= (this.canvas.height/dpr)/2;
+        let rc=canvas.getBoundingClientRect()
+        let mouseX= (mousePosX - rc.left) *dpr;
+        let mouseY= (mousePosY - rc.top) * dpr;
 
         let worldX= this.camX + mouseX /this.zoom;
         let worldY= this.camY + mouseY /this.zoom;
@@ -323,7 +323,7 @@ class Listener
 
         canvas.addEventListener('wheel', (e)=>{
             e.preventDefault();
-            zom.zooming(e.deltaY)
+            zom.zooming(e.deltaY,e.clientX,e.clientY)
         });
 
         bgColor.addEventListener('input', (e)=>{
