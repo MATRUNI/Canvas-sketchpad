@@ -32,7 +32,7 @@ body {
 }
 
 #container {
-    width: 22rem;
+    width: 27rem;
     position: fixed;
     bottom: 30px;
     left: 50%;
@@ -55,7 +55,28 @@ body {
     border-color: rgba(56, 189, 248, 0.4);
     box-shadow: 0 20px 50px rgba(56, 189, 248, 0.15);
 }
+#clear-btn {
+    padding: 0.7rem 1.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 10px;
+    border: none;
+    color: #ff4d4d;
+    background: #1e1e1e;
+    box-shadow: 0 0 0 2px #ff4d4d inset;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
 
+#clear-btn:hover {
+    background: #ff4d4d;
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(255, 77, 77, 0.4);
+}
+
+#clear-btn:active {
+    transform: scale(0.95);
+}
 #colorpick {
     -webkit-appearance: none;
     -moz-appearance: none;
