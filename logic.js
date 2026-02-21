@@ -9,6 +9,7 @@ const color=document.getElementById("colorpick");
 const bgColor=document.getElementById("colorpick1");
 const size=document.getElementById('size');
 const undo=document.getElementById("undo-container")
+const clear_btn=document.getElementById("clear-btn")
 const dpr = window.devicePixelRatio || 1;
 function resizeCanvas() {
     canvas.width = window.innerWidth * dpr;
@@ -123,6 +124,15 @@ class Draw
             this.undo.push(stroke,color.value);
         }
     }
+    
+    clear()
+    {
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.restore()
+        this.strokes=[];
+    }
 }
 class UndoStack
 {
@@ -181,6 +191,11 @@ class UndoStack
             this.draw.strokes.push(op)
         }
         this.zom.draw()
+    }
+    reset()
+    {
+        this.stack=[];
+        this.top=-1;
     }
 }
 class Zoom
@@ -330,6 +345,10 @@ class Listener
             canvas.style.background=e.target.value;
             e.target.blur
 
+        });
+        clear_btn.addEventListener("click", ()=>{
+            drawInst.clear();
+            undoInst.reset();
         })
     }
 }
