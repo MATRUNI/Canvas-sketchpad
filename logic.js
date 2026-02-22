@@ -24,16 +24,16 @@ ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
 class Draw
 {
-    constructor()
-    {
-        this.drawing=false;
-        this.points=[];
-        this.strokes=[];
-        this.undo=null
-        this.brushPos=null
-        this.zom;
-        this.lastPressure=null;
-        this.line=null;
+constructor() {
+        this.drawing = false;
+        this.points = []; // Stores: {x, y, pressure} in World Space
+        this.interpolatedPoints = []; // Stores: [x, y, p] for Perfect-Freehand
+        this.strokes = [];
+        
+        this.ropeSize = 15;    // Pixels (Screen Space)
+        this.spacing = 3;     // Pixels (Screen Space)
+        this.currentScreenPos = { x: 0, y: 0 }; 
+        
         this.init();
     }
     init()
@@ -70,59 +70,102 @@ class Draw
             type: e.pointerType
         }
     }
-    onPointerDown(e) 
-    {
-        this.drawing = true;
-        const pos = this.getPointerPosition(e);
-        // this.brushPos = pos;
-        this.lastPressure = pos.pressure;
-        // this.lastMidX = pos.x;
-        // this.lastMidY = pos.y;
-        
-        ctx.strokeStyle = color.value;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
+    catmullRom(p0, p1, p2, p3, t) {
+        const v0 = (p2 - p0) * 0.5;
+        const v1 = (p3 - p1) * 0.5;
+        const t2 = t * t;
+        const t3 = t * t2;
+        return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (-3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
     }
+    screenToWorld(screenX, screenY) {
+        return {
+            x: this.zom.camX + screenX / (this.zom.zoom * dpr),
+            y: this.zom.camY + screenY / (this.zom.zoom * dpr)
+        };
+    }
+    onPointerDown(e) {
+        this.drawing = true;
+        const rc = canvas.getBoundingClientRect();
+        // Record starting position in SCREEN pixels
+        this.currentScreenPos = { 
+            x: (e.clientX - rc.left) * dpr, 
+            y: (e.clientY - rc.top) * dpr 
+        };
+
+        const worldPos = this.screenToWorld(this.currentScreenPos.x, this.currentScreenPos.y);
+        this.points = [{ ...worldPos, pressure: e.pressure || 0.5 }];
+        this.interpolatedPoints = [[worldPos.x, worldPos.y, e.pressure || 0.5]];
+    }
+
     onPointerMove(e) {
         if (!this.drawing) return;
 
-        const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+        const rc = canvas.getBoundingClientRect();
+        const targetScreenX = (e.clientX - rc.left) * dpr;
+        const targetScreenY = (e.clientY - rc.top) * dpr;
 
-        for (let event of events) {
-            const pos = this.getPointerPosition(event);
+        const dx = targetScreenX - this.currentScreenPos.x;
+        const dy = targetScreenY - this.currentScreenPos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
 
-            this.lastPressure = this.lastPressure ?? pos.pressure;
-            this.lastPressure = this.lastPressure * 0.5 + pos.pressure * 0.5;
+        // ROPE LOGIC (Always feels the same size on screen)
+        if (dist > this.ropeSize) {
+            const angle = Math.atan2(dy, dx);
+            const moveDist = dist - this.ropeSize;
+            
+            this.currentScreenPos.x += Math.cos(angle) * moveDist;
+            this.currentScreenPos.y += Math.sin(angle) * moveDist;
 
-            this.points.push([pos.x, pos.y, this.lastPressure]);
+            // Check SPACING in screen pixels
+            const lastWorldPoint = this.points[this.points.length - 1];
+            // Project last world point to screen to check distance
+            const lastScreenX = (lastWorldPoint.x - this.zom.camX) * this.zom.zoom * dpr;
+            const lastScreenY = (lastWorldPoint.y - this.zom.camY) * this.zom.zoom * dpr;
+            
+            const screenDist = Math.hypot(this.currentScreenPos.x - lastScreenX, this.currentScreenPos.y - lastScreenY);
+
+            if (screenDist > this.spacing) {
+                const worldPos = this.screenToWorld(this.currentScreenPos.x, this.currentScreenPos.y);
+                const newPoint = { ...worldPos, pressure: e.pressure || 0.5 };
+                this.points.push(newPoint);
+
+                // CATMULL-ROM SMOOTHING
+                if (this.points.length > 3) {
+                    const pts = this.points.slice(-4);
+                    for (let t = 0.25; t <= 1; t += 0.25) {
+                        const ix = this.catmullRom(pts[0].x, pts[1].x, pts[2].x, pts[3].x, t);
+                        const iy = this.catmullRom(pts[0].y, pts[1].y, pts[2].y, pts[3].y, t);
+                        const ip = pts[1].pressure + (pts[2].pressure - pts[1].pressure) * t;
+                        this.interpolatedPoints.push([ix, iy, ip]);
+                    }
+                } else {
+                    this.interpolatedPoints.push([newPoint.x, newPoint.y, newPoint.pressure]);
+                }
+            }
         }
-
-        this.zom.draw(); // just re-render
+        this.zom.draw();
     }
 
     onPointerUp() {
-        if (!this.points.length) return;
+        if (!this.interpolatedPoints.length) return;
+        
         const zoomFactor = Math.max(1, this.zom.zoom);
-        const stroke = getStroke(this.points, {
-            size: size.value/this.zom.zoom,
-            thinning: 0.7,
-            smoothing: 0.5 / zoomFactor,
-            streamline: 0.5 / zoomFactor,
-            simulatePressure: false
+        // Use the SMOOTHED points for the final stroke
+        const stroke = getStroke(this.interpolatedPoints, {
+            size: size.value / this.zom.zoom,
+            thinning: 0.6,
+            smoothing: 0.5,
+            streamline: 0.5,
+            simulatePressure: true // Better results with interpolation
         });
 
-        this.strokes.push({
-            stroke,
-            color: color.value
-        });
+        this.strokes.push({ stroke, color: color.value });
 
         this.points = [];
+        this.interpolatedPoints = [];
         this.drawing = false;
-        this.lastPressure = null;
         this.zom.draw();
-        if (this.undo) {
-            this.undo.push(stroke,color.value);
-        }
+        if (this.undo) this.undo.push(stroke, color.value);
     }
     
     clear()
@@ -203,7 +246,7 @@ class Zoom
     constructor(drawInst)
     {
         this.ctx=ctx;
-        this.zoom=1
+        this.zoom=0.001
         this.camX = -canvas.width / (2 * this.zoom);
         this.camY = -canvas.height / (2 * this.zoom);
         this.canvas=canvas;
@@ -242,7 +285,6 @@ class Zoom
         this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
         this.ctx.fill();
     }
-
     draw() 
     {
         this.resetCanvas();
@@ -254,17 +296,16 @@ class Zoom
             this.ctx.fillStyle = s.color;
             this.drawStroke(s.stroke);
         }
-
-        // draw current live stroke
-        if (this.drawins.points.length > 1) {
-            const liveStroke = getStroke(this.drawins.points, {
-                size: size.value/this.zoom,
-                thinning: 0.7,
+        if (this.drawins.interpolatedPoints.length > 1) {
+            const liveStroke = getStroke(this.drawins.interpolatedPoints, {
+                size: (size.value / this.zoom), // Size stays consistent in screen space
+                thinning: 0.6,
                 smoothing: 0.5,
                 streamline: 0.5,
-                simulatePressure: false
+                simulatePressure: true, 
+                last: true // Tells perfect-freehand to taper the end
             });
-
+        
             this.ctx.fillStyle = color.value;
             this.drawStroke(liveStroke);
         }
@@ -283,27 +324,26 @@ class Zoom
         this.ctx.fill();
     }
 
-    zooming(deltaY,mousePosX,mousePosY)
-    {
-        let zoomFactor=1.1;
-        let rc=canvas.getBoundingClientRect()
-        let mouseX= (mousePosX - rc.left) *dpr;
-        let mouseY= (mousePosY - rc.top) * dpr;
+    zooming(deltaY, mousePosX, mousePosY) {
+        // Prevent zooming while actively drawing to maintain coordinate integrity
+        if (this.drawins.drawing) return; 
 
-        let worldX= this.camX + mouseX /this.zoom;
-        let worldY= this.camY + mouseY /this.zoom;
+        let zoomFactor = 1.1;
+        let rc = canvas.getBoundingClientRect();
+        let mouseX = (mousePosX - rc.left) * dpr;
+        let mouseY = (mousePosY - rc.top) * dpr;
 
-        if(deltaY>0)
-        {
-            this.zoom=this.zoom*zoomFactor
-        }
-        else
-        {
-            this.zoom=this.zoom/zoomFactor;
+        let worldX = this.camX + mouseX / this.zoom;
+        let worldY = this.camY + mouseY / this.zoom;
+
+        if (deltaY > 0) {
+            this.zoom = this.zoom / zoomFactor; // Adjusted for "natural" scroll
+        } else {
+            this.zoom = this.zoom * zoomFactor;
         } 
-        
-        this.camX= worldX - mouseX/this.zoom;
-        this.camY= worldY - mouseY/this.zoom;
+
+        this.camX = worldX - mouseX / this.zoom;
+        this.camY = worldY - mouseY / this.zoom;
 
         this.draw();
     }
