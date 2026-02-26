@@ -10,6 +10,8 @@ const bgColor=document.getElementById("colorpick1");
 const size=document.getElementById('size');
 const undo=document.getElementById("undo-container")
 const clear_btn=document.getElementById("clear-btn")
+const options = document.querySelectorAll(".zoom-option");
+const sliderZoom = document.querySelector(".zoom-slider");
 const dpr = window.devicePixelRatio || 1;
 function resizeCanvas() {
     canvas.width = window.innerWidth * dpr;
@@ -347,6 +349,29 @@ class Zoom
 
         this.draw();
     }
+    zoomCenter(deltaY) {
+
+        if (this.drawins.drawing) return;
+
+        const zoomFactor = 1.1;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        const worldX = this.camX + centerX / this.zoom;
+        const worldY = this.camY + centerY / this.zoom;
+
+        if (deltaY > 0) {
+            this.zoom = this.zoom / zoomFactor;
+        } else {
+            this.zoom = this.zoom * zoomFactor;
+        }
+
+        this.camX = worldX - centerX / this.zoom;
+        this.camY = worldY - centerY / this.zoom;
+
+        this.draw();
+    }
 }
 const drawInst=new Draw()
 const zom=new Zoom(drawInst);
@@ -360,6 +385,7 @@ class Listener
     constructor()
     {
         this.init()
+        this.zoomMode="mouse"
     }
     init()
     {
@@ -378,7 +404,14 @@ class Listener
 
         canvas.addEventListener('wheel', (e)=>{
             e.preventDefault();
-            zom.zooming(e.deltaY,e.clientX,e.clientY)
+            if(this.zoomMode==="mouse")
+            {
+                zom.zooming(e.deltaY,e.clientX,e.clientY)
+            }
+            else
+            {
+                zom.zoomCenter(e.deltaY)
+            }
         });
 
         bgColor.addEventListener('input', (e)=>{
@@ -389,7 +422,18 @@ class Listener
         clear_btn.addEventListener("click", ()=>{
             drawInst.clear();
             undoInst.reset();
-        })
+        });
+
+        options.forEach((btn, index) => {
+          btn.addEventListener("click", () => {
+        
+            document.querySelector(".zoom-option.active").classList.remove("active");
+            btn.classList.add("active");
+            sliderZoom.style.transform = `translateX(${index * 100}%)`;
+            this.zoomMode = btn.dataset.mode;
+          });
+        });
+
     }
 }
 new Listener()
