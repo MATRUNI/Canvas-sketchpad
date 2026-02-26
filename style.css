@@ -1,7 +1,7 @@
 /* style.css */
 
 :root {
-    --bg-color: #0f172a;
+    --bg-color: rgb(26,29,55);
     --dock-bg: rgba(30, 41, 59, 0.7);
     --accent: #38bdf8;
     --glass-border: rgba(255, 255, 255, 0.1);
@@ -24,7 +24,7 @@ body {
 #canvas {
     height: 100vh;
     width: 100vw;
-    background: rgb(0, 0, 0);
+    background: var(--bg-color);
     cursor: crosshair;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
@@ -276,7 +276,7 @@ body {
         height: 100dvh;
     }
     #canvas{
-        background-color: rgb(0, 0, 0);
+        background-color: var(--bg-color);
     }
     #container{
         left: 50%;
