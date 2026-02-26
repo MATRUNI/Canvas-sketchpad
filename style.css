@@ -124,8 +124,52 @@ body {
     background: var(--accent);
     transform: scale(1.2);
 }
-#size-value{
+#size-value::-webkit-outer-spin-button,
+#size-value::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+
+@keyframes neonPulse {
+    0% {
+        box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);
+    }
+    50% {
+        box-shadow: 0 0 14px var(--accent), 0 0 28px var(--accent);
+    }
+    100% {
+        box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);
+    }
+}
+
+#size-value {
+    width: 50px;
+    padding: 5px 8px;
+    font-size: 1rem;
     color: white;
+    background: rgba(17,17,17,0.85); /* dark glass */
+    border: 2px solid var(--accent);
+    border-radius: 10px;
+    text-align: center;
+    outline: none;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    animation: neonPulse 2s infinite ease-in-out;
+}
+
+/* Hover effect for stronger glow */
+#size-value:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 18px var(--accent), 0 0 36px var(--accent);
+}
+
+/* Focus effect */
+#size-value:focus {
+    box-shadow: 0 0 28px var(--accent), 0 0 56px var(--accent);
+    background: rgba(17,17,17,0.9);
 }
 
 #container::before {
