@@ -330,7 +330,7 @@ class Zoom
         // Prevent zooming while actively drawing to maintain coordinate integrity
         if (this.drawins.drawing) return; 
 
-        let zoomFactor = 1.1;
+        let zoomFactor = 1 + Math.abs(deltaY) * 0.001;
         let rc = canvas.getBoundingClientRect();
         let mouseX = (mousePosX - rc.left) * dpr;
         let mouseY = (mousePosY - rc.top) * dpr;
@@ -353,7 +353,7 @@ class Zoom
 
         if (this.drawins.drawing) return;
 
-        const zoomFactor = 1.1;
+        const zoomFactor = 1 + Math.abs(deltaY) * 0.001;
 
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
