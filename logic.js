@@ -392,11 +392,11 @@ class Listener
         undo.addEventListener("click", e=>{
             e.stopPropagation();
             e.preventDefault();
-            if(e.target.textContent==="<-")
+            if(e.target.textContent==="↶")
             {
                 undoInst.undo()
             }
-            else if(e.target.textContent==="->")
+            else if(e.target.textContent==="↷")
             {
                 undoInst.redo()
             }
