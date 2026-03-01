@@ -31,6 +31,9 @@ constructor() {
         this.points = []; // Stores: {x, y, pressure} in World Space
         this.interpolatedPoints = []; // Stores: [x, y, p] for Perfect-Freehand
         this.strokes = [];
+        this.activePointers=new Set();
+        this.pendingDraw = null;
+        this.isPinching = false;
         
         this.ropeSize = 15;    // Pixels (Screen Space)
         this.spacing = 3;     // Pixels (Screen Space)
@@ -41,14 +44,50 @@ constructor() {
     init()
     {
         canvas.addEventListener("pointerdown", (e)=>{
+            this.activePointers.add(e.pointerId)
+            canvas.setPointerCapture(e.pointerId)
+            if(this.activePointers.size>1)
+            {
+                this.isPinching=true;
+                if(this.pendingDraw)
+                {
+                    clearTimeout(this.pendingDraw)
+                    this.pendingDraw=null
+                }
+                this.drawing=false;
+                return;
+            }
             if(e.target !==canvas) return
-             this.onPointerDown(e)
+            this.pendingDraw=setTimeout(() => {
+                if(!this.isPinching)
+                {
+                    this.onPointerDown(e)
+                }
+                this.pendingDraw=null
+            }, 40);
             });
         canvas.addEventListener("pointermove", (e)=> this.onPointerMove(e));
-        canvas.addEventListener("pointerup",()=> this.onPointerUp());
-        canvas.addEventListener("pointercancel", ()=> this.onPointerUp());
-        canvas.addEventListener("pointerout", ()=>{ 
-            if(!this.drawing) return;
+        canvas.addEventListener("pointerup",(e)=> {
+            this.activePointers.delete(e.pointerId);
+
+            if(this.activePointers.size===0)
+            {
+                this.isPinching=false;
+            }
+            if(this.pendingDraw)
+            {
+                clearTimeout(this.pendingDraw)
+                this.pendingDraw=null
+            }
+            this.onPointerUp()
+        });
+        canvas.addEventListener("pointercancel", (e)=> {
+            this.activePointers.delete(e.pointerId);
+            this.onPointerUp()
+        });
+        canvas.addEventListener("pointerout", (e)=>{ 
+            this.activePointers.delete(e.pointerId);
+            if(this.drawing)
             this.onPointerUp()
         });
     }
@@ -372,6 +411,18 @@ class Zoom
 
         this.draw();
     }
+    zoomingTouch(newZoom,centerX,centerY)
+    {
+        if(this.drawins.drawing) return;
+
+        let worldX=this.camX+centerX/this.zoom
+        let worldY=this.camY+centerY/this.zoom
+
+        this.zoom=newZoom;
+        this.camX=worldX-centerX/this.zoom
+        this.camY=worldY-centerY/this.zoom
+        this.draw();
+    }
 }
 const drawInst=new Draw()
 const zom=new Zoom(drawInst);
@@ -384,8 +435,15 @@ class Listener
 {
     constructor()
     {
+        this.zoomMode="mouse";
+        this.touchZoom = {
+            active: false,
+            startDistance: 0,
+            startZoom: 1,
+            center: { x: 0, y: 0 }
+        };
+        this.touchListeners();
         this.init()
-        this.zoomMode="mouse"
     }
     init()
     {
@@ -434,6 +492,50 @@ class Listener
           });
         });
 
+    }
+    touchListeners()
+    {
+        canvas.addEventListener("touchstart", (e)=>{
+            if(e.touches.length===2)
+            {
+                e.preventDefault();
+                this.touchZoom.active=true; // means 2 touches
+                const [t1,t2]=e.touches; // gettings 2 touch points
+
+                this.touchZoom.startDistance=Math.hypot(t2.clientX-t1.clientX, t2.clientY-t1.clientY); 
+
+                this.touchZoom.startZoom=zom.zoom;
+
+                this.touchZoom.center={
+                    x:(t1.clientX+t2.clientX)/2,
+                    y:(t1.clientY+t2.clientY)/2
+                };
+            }
+        })
+
+        canvas.addEventListener("touchmove", (e)=>{
+            if(this.touchZoom.active && e.touches.length===2)
+            {
+                e.preventDefault();
+
+                const [t1,t2]=e.touches;
+
+                let currentDistance=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY)
+
+                const scale=currentDistance/this.touchZoom.startDistance;
+
+                let newZoom=this.touchZoom.startZoom*scale
+
+                zom.zoomingTouch(newZoom,this.touchZoom.center.x,this.touchZoom.center.y)
+            }
+        })
+
+        canvas.addEventListener("touchend", (e)=>{
+            if(e.touches.length<2)
+            {
+                this.touchZoom.active=false;
+            }
+        });
     }
 }
 new Listener()
