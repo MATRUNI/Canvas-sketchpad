@@ -12,6 +12,8 @@ const undo=document.getElementById("undo-container")
 const clear_btn=document.getElementById("clear-btn")
 const options = document.querySelectorAll(".zoom-option");
 const sliderZoom = document.querySelector(".zoom-slider");
+const mode_change=document.getElementById("mode");
+const mode_container=document.getElementById("mode-container");
 const dpr = window.devicePixelRatio || 1;
 function resizeCanvas() {
     canvas.width = window.innerWidth * dpr;
@@ -580,22 +582,29 @@ class Listener
             }
         });
     }
-
     panListener()
     {
+        let timer=null;
         window.addEventListener("keydown", (press)=>{
             if(press.code==="Space" && drawInst.mode!=="pan")
             {
                 press.preventDefault();
                 drawInst.mode="pan"
+                mode_change.textContent=drawInst.mode
                 canvas.style.cursor="grab"
+                clearTimeout(timer);
+                mode_container.classList.remove("hidden")
             }
         })
         window.addEventListener("keyup", (press)=>{
             if(press.code==="Space")
             {
                 drawInst.mode="draw"
+                mode_change.textContent=drawInst.mode
                 canvas.style.cursor="crosshair"
+                timer=setTimeout(()=>{
+                    mode_container.classList.add("hidden");
+                },1000)
             }
         })
         canvas.addEventListener("pointerdown", (e)=>{

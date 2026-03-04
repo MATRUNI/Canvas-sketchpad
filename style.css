@@ -132,7 +132,6 @@ body {
 #size-value {
     -moz-appearance: textfield;
 }
-
 @keyframes neonPulse {
     0% {
         box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);
@@ -143,6 +142,35 @@ body {
     100% {
         box-shadow: 0 0 8px var(--accent), 0 0 16px var(--accent);
     }
+}
+
+#mode-container{
+    position: absolute;
+    top: 1rem;
+    width: 12vw;
+    height: 5vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 15px;
+    background-color: var(--bg-color); /* dark base for neon contrast */
+    color: var(--accent);
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px var(--accent), 0 0 20px var(--accent);
+    z-index: 1000;
+    gap: 0.5rem;
+
+    opacity: 1;
+    transition: opacity 0.5s ease;
+    animation: neonPulse 2s infinite ease;
+    span{
+        width: 4rem;
+    }
+}
+#mode-container.hidden{
+    opacity: 0;
 }
 
 #size-value {
