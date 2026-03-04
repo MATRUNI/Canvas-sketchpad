@@ -275,23 +275,85 @@ body {
     box-shadow: 0 2px 18px rgb(136, 255, 245);
 }
 
-@media only screen and (max-width: 600px)
-{
-    body{
-        height: 100dvh;
+/* Add this to your main CSS or replace the bottom section */
+
+@media only screen and (max-width: 768px) {
+    #container {
+        width: 90%;
+        bottom: 1rem;
+        gap: 1rem;
+        padding: 10px 15px;
+        flex-wrap: wrap; /* Allows items to stack if the screen is very narrow */
+        justify-content: center;
+        border-radius: 25px;
     }
-    #canvas{
-        background-color: var(--bg-color);
+
+    #container::before {
+        display: none;
     }
-    #container{
-        left: 50%;
+
+    #colorpick, #colorpick1 {
+        width: 2rem;
+        height: 2rem;
     }
-    #undo-container{
+
+    #size {
+        width: 100px;
+    }
+
+    #undo-container {
+        left: auto;
+        right: 1rem;
+        top: 1rem;
         bottom: auto;
-        left: 82%;
-        top: 5%;
-        flex-direction: column;
-        color: #000000;
-        height: auto;
+        flex-direction: row;
+        padding: 8px;
+        gap: 1rem;
+        border-radius: 15px;
+    }
+
+    .undo-btn {
+        padding: 0.6rem 1rem;
+        font-size: 1.1rem;
+    }
+
+    /* Adjust the Zoom Toggle for touch */
+    .zoom-toggle {
+        display: none;
+    }
+    
+    .zoom-option {
+        font-size: 0.7rem;
+    }
+
+    #clear-btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* Landscape Mode for phones */
+@media only screen and (max-height: 500px) and (orientation: landscape) {
+    #container {
+        bottom: 10px;
+        padding: 5px 15px;
+    }
+        #undo-container {
+        left: auto;
+        right: 1rem;
+        top: 1rem;
+        bottom: auto;
+        flex-direction: row;
+        padding: 8px;
+        gap: 1rem;
+        border-radius: 15px;
+    }
+    .zoom-toggle{
+        display: none;
+    }
+
+    .undo-btn {
+        padding: 0.6rem 1rem;
+        font-size: 1.1rem;
     }
 }
