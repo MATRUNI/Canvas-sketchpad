@@ -34,6 +34,7 @@ constructor() {
         this.activePointers=new Set();
         this.pendingDraw = null;
         this.isPinching = false;
+        this.mode="draw";
         
         this.ropeSize = 15;    // Pixels (Screen Space)
         this.spacing = 3;     // Pixels (Screen Space)
@@ -44,6 +45,7 @@ constructor() {
     init()
     {
         canvas.addEventListener("pointerdown", (e)=>{
+            if(drawInst.mode!=="draw") return;
             this.activePointers.add(e.pointerId)
             canvas.setPointerCapture(e.pointerId)
             if(this.activePointers.size>1)
@@ -66,8 +68,12 @@ constructor() {
                 this.pendingDraw=null
             }, 40);
             });
-        canvas.addEventListener("pointermove", (e)=> this.onPointerMove(e));
+        canvas.addEventListener("pointermove", (e)=> {
+            if(drawInst.mode!=="draw") return;
+            this.onPointerMove(e)
+        });
         canvas.addEventListener("pointerup",(e)=> {
+            if(drawInst.mode!=="draw") return;
             this.activePointers.delete(e.pointerId);
 
             if(this.activePointers.size===0)
@@ -82,6 +88,7 @@ constructor() {
             this.onPointerUp()
         });
         canvas.addEventListener("pointercancel", (e)=> {
+            if(drawInst.mode!=="draw") return;
             this.activePointers.delete(e.pointerId);
             this.onPointerUp()
         });
@@ -292,6 +299,9 @@ class Zoom
         this.camY = -canvas.height / (2 * this.zoom);
         this.canvas=canvas;
         this.drawins=drawInst
+        this.isPanning = false;
+        this.lastPanX = 0;
+        this.lastPanY = 0;
         this.draw()
     }
     resetCanvas()
@@ -303,7 +313,39 @@ class Zoom
     {
         this.ctx.setTransform(this.zoom*dpr, 0, 0, this.zoom*dpr, this.zoom*dpr*-this.camX, this.zoom*dpr*-this.camY);
     }
+    startPan(clientX,clientY)
+    {
+        const rect = this.canvas.getBoundingClientRect();
 
+        this.isPanning = true;
+        this.lastPanX = (clientX - rect.left) * dpr;
+        this.lastPanY = (clientY - rect.top) * dpr;
+    }
+    mousePan(clientX,clientY)
+    {
+        if(!this.isPanning)
+        {
+            return
+        }
+        const rect=this.canvas.getBoundingClientRect()
+        let mouseX=(clientX -rect.left) *dpr
+        let mouseY=(clientY -rect.top) *dpr
+
+        const dx=mouseX-this.lastPanX;
+        const dy=mouseY-this.lastPanY;
+
+        this.camX -= dx/this.zoom
+        this.camY -= dy/this.zoom
+
+        this.lastPanX=mouseX
+        this.lastPanY=mouseY
+        this.draw();
+    }
+    endPan()
+    {
+        this.isPanning=false;
+
+    }
     drawWorldGrid()
     {
         this.ctx.strokeStyle = "#ccc";
@@ -443,6 +485,7 @@ class Listener
             center: { x: 0, y: 0 }
         };
         this.touchListeners();
+        this.panListener();
         this.init()
     }
     init()
@@ -536,6 +579,40 @@ class Listener
                 this.touchZoom.active=false;
             }
         });
+    }
+
+    panListener()
+    {
+        window.addEventListener("keydown", (press)=>{
+            if(press.code==="Space" && drawInst.mode!=="pan")
+            {
+                press.preventDefault();
+                drawInst.mode="pan"
+                canvas.style.cursor="grab"
+            }
+        })
+        window.addEventListener("keyup", (press)=>{
+            if(press.code==="Space")
+            {
+                drawInst.mode="draw"
+                canvas.style.cursor="crosshair"
+            }
+        })
+        canvas.addEventListener("pointerdown", (e)=>{
+            if(drawInst.mode!=="pan") return;
+            zom.startPan(e.clientX, e.clientY)
+            canvas.style.cursor="grabbing"
+        });
+        canvas.addEventListener("pointermove", (e)=>{
+            if(drawInst.mode!=="pan") return;
+            zom.mousePan(e.clientX, e.clientY)
+        });
+
+        canvas.addEventListener("pointerup", ()=>{
+            if(drawInst.mode!=="pan") return;
+            canvas.style.cursor="grab"
+            zom.endPan();
+        })
     }
 }
 new Listener()
