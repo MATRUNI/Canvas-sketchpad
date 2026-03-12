@@ -589,11 +589,23 @@ class Listener
             if(press.code==="Space" && drawInst.mode!=="pan")
             {
                 press.preventDefault();
-                drawInst.mode="pan"
-                mode_change.textContent=drawInst.mode
-                canvas.style.cursor="grab"
-                clearTimeout(timer);
-                mode_container.classList.remove("hidden")
+                if(drawInst.drawing)
+                {
+                    clearTimeout(timer);
+                    mode_container.classList.remove("hidden")
+                    mode_change.textContent=drawInst.mode
+                    timer=setTimeout(()=>{
+                        mode_container.classList.add("hidden");
+                    },1000)
+                }
+                else
+                {
+                    drawInst.mode="pan"
+                    mode_change.textContent=drawInst.mode
+                    canvas.style.cursor="grab"
+                    clearTimeout(timer);
+                    mode_container.classList.remove("hidden")
+                }
             }
         })
         window.addEventListener("keyup", (press)=>{
