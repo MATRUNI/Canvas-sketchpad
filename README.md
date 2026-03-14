@@ -24,7 +24,8 @@ What started as a curiosity project — “How smooth can I make a digital brush
 - Adaptive, pressure-sensitive strokes using [Perfect Freehand](https://github.com/steveruizok/perfect-freehand)
 - Pressure-sensitive brush rendering
 - High-frequency coalesced input for smooth lines
-- A zoomable world-space camera system 
+- A zoomable world-space camera system (Mouse Pointer/Screen Center)
+- Pan across the world-space (Space-key + Drag)
 - Undo/redo state management
 - High-DPI rendering optimizations
 
@@ -57,6 +58,7 @@ This project focuses on recreating the natural fluidity of professional drawing 
 - Transform-based camera scaling
 - Smooth zoom toward cursor
 - Stroke rendering preserved across zoom levels
+- Pan for PC (Space + Drag) and zoom for touch devices
 
 ### ⚡ Performance Optimizations
 - High-DPI support using devicePixelRatio
@@ -93,6 +95,8 @@ Perfect Freehand generates smooth polygon outlines from pointer input.
 ### 3️⃣ Camera Transform System
 A custom zoomable camera transforms screen coordinates into world coordinates, allowing infinite canvas-style scaling without distorting strokes.
 
+Supports panning on PC and zooming on touch devices.
+
 ---
 
 # Future Improvements
@@ -111,7 +115,7 @@ A custom zoomable camera transforms screen coordinates into world coordinates, a
 2. Draw using mouse, stylus, or touch input.
 3. Adjust brush size and color using the UI controls.
 4. Use Ctrl+Z / Ctrl+Y for undo/redo.
-5. Use mouse wheel to zoom.
+5. Use mouse wheel to zoom or pinch on touch devices.
 
 ---
 
