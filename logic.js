@@ -537,6 +537,14 @@ class Listener
             {
                 e.stopPropagation()
                 drawInst.mode=drawInst.mode==="draw"?"pan":"draw"
+                drawInst.drawing = false;
+                drawInst.points = [];
+                drawInst.interpolatedPoints = [];
+                if(drawInst.pendingDraw){
+                    clearTimeout(drawInst.pendingDraw);
+                    drawInst.pendingDraw = null;
+                }
+                drawInst.isPinching = false;
                 this.touchZoom.active=false;
                 zom.endPan();
                 return;
