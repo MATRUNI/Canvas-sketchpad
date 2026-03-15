@@ -257,36 +257,24 @@ class UndoStack
             this.redo()
         }
     }
-    push(stroke,color)
-    {
+    push(stroke, color) {
         this.top++;
-        if(this.stack[this.top])
-        {
-            this.stack.length=this.top;
-        }
-        this.stack.push({type:"add",stroke,color:color});
+        this.stack.length = this.top;
+        this.stack.push({ stroke, color });
     }
-    undo()
-    {
-        if(this.top<0) return;
-        
-        const operation=this.stack[this.top--]
-        if(operation.type === "add")
-        {
-            this.draw.strokes.pop();
-        }
-        this.zom.draw()
-    }
-    redo()
-    {
-        if(this.top+1 >= this.stack.length) return;
 
-        const op=this.stack[++this.top];
-        if(op.type === "add")
-        {
-            this.draw.strokes.push(op)
-        }
-        this.zom.draw()
+    undo() {
+        if (this.top < 0) return;
+        this.top--;
+        this.draw.strokes = this.stack.slice(0, this.top+1);
+        this.zom.draw();
+    }
+
+    redo() {
+        if (this.top + 1 >= this.stack.length) return;
+        this.top++;
+        this.draw.strokes = this.stack.slice(0, this.top+1);
+        this.zom.draw();
     }
     reset()
     {
