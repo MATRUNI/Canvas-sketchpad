@@ -15,11 +15,14 @@ const sliderZoom = document.querySelector(".zoom-slider");
 const mode_change=document.getElementById("mode");
 const mode_container=document.getElementById("mode-container");
 const dpr = window.devicePixelRatio || 1;
+
+let canvasRect = canvas.getBoundingClientRect();
 function resizeCanvas() {
     canvas.width = window.innerWidth * dpr;
     canvas.height = window.innerHeight * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(dpr, dpr);
+    canvasRect = canvas.getBoundingClientRect();
 }
 
 resizeCanvas();
@@ -106,7 +109,7 @@ constructor() {
     }
     getPointerPosition(e)
     {
-        let rc=canvas.getBoundingClientRect()
+        let rc=canvasRect
         let mouseX= (e.clientX -rc.left)*dpr;
         let mouseY= (e.clientY -rc.top)*dpr;
 
@@ -135,7 +138,7 @@ constructor() {
     }
     onPointerDown(e) {
         this.drawing = true;
-        const rc = canvas.getBoundingClientRect();
+        const rc = canvasRect;
         // Record starting position in SCREEN pixels
         this.currentScreenPos = { 
             x: (e.clientX - rc.left) * dpr, 
@@ -150,7 +153,7 @@ constructor() {
     onPointerMove(e) {
         if (!this.drawing) return;
 
-        const rc = canvas.getBoundingClientRect();
+        const rc = canvasRect;
         const targetScreenX = (e.clientX - rc.left) * dpr;
         const targetScreenY = (e.clientY - rc.top) * dpr;
 
@@ -317,7 +320,7 @@ class Zoom
     }
     startPan(clientX,clientY)
     {
-        const rect = this.canvas.getBoundingClientRect();
+        const rect = canvasRect;
 
         this.isPanning = true;
         this.lastPanX = (clientX - rect.left) * dpr;
@@ -329,7 +332,7 @@ class Zoom
         {
             return
         }
-        const rect=this.canvas.getBoundingClientRect()
+        const rect=canvasRect
         let mouseX=(clientX -rect.left) *dpr
         let mouseY=(clientY -rect.top) *dpr
 
@@ -414,7 +417,7 @@ class Zoom
         if (this.drawins.drawing) return; 
 
         let zoomFactor = 1 + Math.abs(deltaY) * 0.001;
-        let rc = canvas.getBoundingClientRect();
+        let rc = canvasRect;
         let mouseX = (mousePosX - rc.left) * dpr;
         let mouseY = (mousePosY - rc.top) * dpr;
 
@@ -550,7 +553,7 @@ class Listener
                 zom.endPan();
                 return;
             }
-            if(e.touches.length===2 && drawInst.mode==="draw")
+            else if(e.touches.length===2 && drawInst.mode==="draw")
             {
                 this.touchZoom.active=true; // means 2 touches
                 const [t1,t2]=e.touches; // gettings 2 touch points
