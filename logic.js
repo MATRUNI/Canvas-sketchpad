@@ -533,9 +533,9 @@ class Listener
     {
         canvas.addEventListener("touchstart", (e)=>{
             e.preventDefault()
+            e.stopPropagation()
             if(e.touches.length===3)
             {
-                e.stopPropagation()
                 drawInst.mode=drawInst.mode==="draw"?"pan":"draw"
                 drawInst.drawing = false;
                 drawInst.points = [];
