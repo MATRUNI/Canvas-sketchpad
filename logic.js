@@ -541,9 +541,17 @@ class Listener
     touchListeners()
     {
         canvas.addEventListener("touchstart", (e)=>{
-            if(e.touches.length===2)
+            e.preventDefault()
+            if(e.touches.length===3)
             {
-                e.preventDefault();
+                e.stopPropagation()
+                drawInst.mode=drawInst.mode==="draw"?"pan":"draw"
+                this.touchZoom.active=false;
+                zom.endPan();
+                return;
+            }
+            if(e.touches.length===2 && drawInst.mode==="draw")
+            {
                 this.touchZoom.active=true; // means 2 touches
                 const [t1,t2]=e.touches; // gettings 2 touch points
 
@@ -632,6 +640,24 @@ class Listener
         canvas.addEventListener("pointerup", ()=>{
             if(drawInst.mode!=="pan") return;
             canvas.style.cursor="grab"
+            zom.endPan();
+        })
+
+
+        canvas.addEventListener("touchstart", (e)=>{
+            if(drawInst.mode!=="pan" || e.touches.length!==1) return;
+            const touch=e.touches[0]
+            zom.startPan(touch.clientX, touch.clientY)
+        });
+        canvas.addEventListener("touchmove", (e)=>{
+            if(drawInst.mode!=="pan" || e.touches.length!==1) return;
+            e.preventDefault()
+            const touch=e.touches[0]
+            zom.mousePan(touch.clientX, touch.clientY)
+        });
+
+        canvas.addEventListener("touchend", ()=>{
+            if(drawInst.mode!=="pan") return;
             zom.endPan();
         })
     }
