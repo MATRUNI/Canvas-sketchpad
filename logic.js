@@ -14,6 +14,7 @@ const options = document.querySelectorAll(".zoom-option");
 const sliderZoom = document.querySelector(".zoom-slider");
 const mode_change=document.getElementById("mode");
 const mode_container=document.getElementById("mode-container");
+const earser=document.getElementById("eraser");
 const dpr = window.devicePixelRatio || 1;
 
 let canvasRect = canvas.getBoundingClientRect();
@@ -662,3 +663,27 @@ class Listener
     }
 }
 new Listener()
+class Eraser
+{
+    constructor()
+    {
+        this.isEraser=false;
+        this.init();
+    }
+    init()
+    {
+        eraser.addEventListener('click', ()=>{
+            this.isEraser=!this.isEraser;
+            if(this.isEraser)
+            {
+                ctx.globalCompositeOperation="destination-out";
+                ctx.lineWidth=10;
+            }
+            else
+            {
+                ctx.globalCompositeOperation='source-over';
+            }
+        })
+    }
+}
+new Eraser();
