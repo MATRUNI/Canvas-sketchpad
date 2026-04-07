@@ -14,7 +14,7 @@ const options = document.querySelectorAll(".zoom-option");
 const sliderZoom = document.querySelector(".zoom-slider");
 const mode_change=document.getElementById("mode");
 const mode_container=document.getElementById("mode-container");
-const earser=document.getElementById("eraser");
+const eraser=document.getElementById("eraser");
 const dpr = window.devicePixelRatio || 1;
 
 let canvasRect = canvas.getBoundingClientRect();
@@ -41,6 +41,7 @@ constructor() {
         this.pendingDraw = null;
         this.isPinching = false;
         this.mode="draw";
+        this.eraser=null;
         
         this.ropeSize = 15;    // Pixels (Screen Space)
         this.spacing = 3;     // Pixels (Screen Space)
@@ -107,6 +108,10 @@ constructor() {
     setUndoInstance(undoInst)
     {
         this.undo=undoInst
+    }
+    setEraserInstance(eraserInst)
+    {
+        this.eraser=eraserInst;
     }
     getPointerPosition(e)
     {
@@ -213,13 +218,13 @@ constructor() {
             simulatePressure: true // Better results with interpolation
         });
 
-        this.strokes.push({ stroke, color: color.value });
+        this.strokes.push({ stroke, color: color.value, type:this.eraser.isEraser?'erase':'draw' });
 
         this.points = [];
         this.interpolatedPoints = [];
         this.drawing = false;
         this.zom.draw();
-        if (this.undo) this.undo.push(stroke, color.value);
+        if (this.undo) this.undo.push(stroke, color.value,this.eraser.isEraser);
     }
     
     clear()
@@ -258,10 +263,10 @@ class UndoStack
             this.redo()
         }
     }
-    push(stroke, color) {
+    push(stroke, color,isEraser) {
         this.top++;
         this.stack.length = this.top;
-        this.stack.push({ stroke, color });
+        this.stack.push({ stroke, color,type:isEraser?'erase':'draw' });
     }
 
     undo() {
@@ -370,9 +375,16 @@ class Zoom
 
         // draw saved strokes
         for (let s of this.drawins.strokes) {
-            this.ctx.fillStyle = s.color;
+            if (s.type === "erase") {
+                this.ctx.fillStyle=bgColor.value;
+            ctx.globalCompositeOperation = "destination-out";
+            } else {
+                ctx.globalCompositeOperation = "source-over";
+                this.ctx.fillStyle = s.color;
+            }
             this.drawStroke(s.stroke);
         }
+        ctx.globalCompositeOperation = "source-over";
         if (this.drawins.interpolatedPoints.length > 1) {
             const liveStroke = getStroke(this.drawins.interpolatedPoints, {
                 size: (size.value / this.zoom), // Size stays consistent in screen space
@@ -382,8 +394,11 @@ class Zoom
                 simulatePressure: true, 
                 last: true // Tells perfect-freehand to taper the end
             });
-        
-            this.ctx.fillStyle = color.value;
+            if (this.drawins.eraser.isEraser) {
+                this.ctx.fillStyle = bgColor.value;
+            } else {
+                this.ctx.fillStyle = color.value;
+            }
             this.drawStroke(liveStroke);
         }
     }
@@ -674,16 +689,10 @@ class Eraser
     {
         eraser.addEventListener('click', ()=>{
             this.isEraser=!this.isEraser;
-            if(this.isEraser)
-            {
-                ctx.globalCompositeOperation="destination-out";
-                ctx.lineWidth=10;
-            }
-            else
-            {
-                ctx.globalCompositeOperation='source-over';
-            }
+            eraser.classList.toggle('active-mode', this.isEraser);
+            zom.draw();
         })
     }
 }
-new Eraser();
+let erase=new Eraser();
+drawInst.setEraserInstance(erase)
