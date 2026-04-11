@@ -32,7 +32,7 @@ ctx.lineCap="round"    // something like brush type
 ctx.lineJoin="round"
 class Draw
 {
-constructor() {
+constructor(renderer) {
         this.drawing = false;
         this.points = []; // Stores: {x, y, pressure} in World Space
         this.interpolatedPoints = []; // Stores: [x, y, p] for Perfect-Freehand
@@ -42,10 +42,11 @@ constructor() {
         this.isPinching = false;
         this.mode="draw";
         this.eraser=null;
-        
+        this.render=renderer;
         this.ropeSize = 15;    // Pixels (Screen Space)
         this.spacing = 3;     // Pixels (Screen Space)
         this.currentScreenPos = { x: 0, y: 0 }; 
+        this.frameRequested = false;
         
         this.init();
     }
@@ -202,7 +203,15 @@ constructor() {
                 }
             }
         }
-        this.zom.draw();
+        // this.render.draw();
+        if (!this.frameRequested) {
+    this.frameRequested = true;
+
+    requestAnimationFrame(() => {
+        this.render.draw();
+        this.frameRequested = false;
+    });
+}
     }
 
     onPointerUp() {
@@ -223,7 +232,7 @@ constructor() {
         this.points = [];
         this.interpolatedPoints = [];
         this.drawing = false;
-        this.zom.draw();
+        this.render.draw();
         if (this.undo) this.undo.push(stroke, color.value,this.eraser.isEraser);
     }
     
@@ -238,10 +247,10 @@ constructor() {
 }
 class UndoStack
 {
-    constructor(drawInstance,zom)
+    constructor(drawInstance,renderer)
     {
         this.draw=drawInstance;
-        this.zom=zom;
+        this.render=renderer;
         this.stack=[];
         this.top=-1;
         this.init();
@@ -273,14 +282,14 @@ class UndoStack
         if (this.top < 0) return;
         this.top--;
         this.draw.strokes = this.stack.slice(0, this.top+1);
-        this.zom.draw();
+        this.render.draw();
     }
 
     redo() {
         if (this.top + 1 >= this.stack.length) return;
         this.top++;
         this.draw.strokes = this.stack.slice(0, this.top+1);
-        this.zom.draw();
+        this.render.draw();
     }
     reset()
     {
@@ -290,7 +299,7 @@ class UndoStack
 }
 class Zoom
 {
-    constructor(drawInst)
+    constructor(drawInst,renderer)
     {
         this.ctx=ctx;
         this.zoom=0.001
@@ -301,7 +310,8 @@ class Zoom
         this.isPanning = false;
         this.lastPanX = 0;
         this.lastPanY = 0;
-        this.draw()
+        this.render=renderer
+        if (this.render) this.render.draw();    
     }
     resetCanvas()
     {
@@ -338,7 +348,7 @@ class Zoom
 
         this.lastPanX=mouseX
         this.lastPanY=mouseY
-        this.draw();
+        this.render.draw();
     }
     endPan()
     {
@@ -367,54 +377,6 @@ class Zoom
         this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
         this.ctx.fill();
     }
-    draw() 
-    {
-        this.resetCanvas();
-        this.applyCamera();
-        // this.drawWorldGrid()
-
-        // draw saved strokes
-        for (let s of this.drawins.strokes) {
-            if (s.type === "erase") {
-                this.ctx.fillStyle=bgColor.value;
-            ctx.globalCompositeOperation = "destination-out";
-            } else {
-                ctx.globalCompositeOperation = "source-over";
-                this.ctx.fillStyle = s.color;
-            }
-            this.drawStroke(s.stroke);
-        }
-        ctx.globalCompositeOperation = "source-over";
-        if (this.drawins.interpolatedPoints.length > 1) {
-            const liveStroke = getStroke(this.drawins.interpolatedPoints, {
-                size: (size.value / this.zoom), // Size stays consistent in screen space
-                thinning: 0.6,
-                smoothing: 0.5,
-                streamline: 0.5,
-                simulatePressure: true, 
-                last: true // Tells perfect-freehand to taper the end
-            });
-            if (this.drawins.eraser.isEraser) {
-                this.ctx.fillStyle = bgColor.value;
-            } else {
-                this.ctx.fillStyle = color.value;
-            }
-            this.drawStroke(liveStroke);
-        }
-    }
-    drawStroke(stroke) {
-        if (!stroke.length) return;
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(stroke[0][0], stroke[0][1]);
-
-        for (let i = 1; i < stroke.length; i++) {
-            this.ctx.lineTo(stroke[i][0], stroke[i][1]);
-        }
-
-        this.ctx.closePath();
-        this.ctx.fill();
-    }
 
     zooming(deltaY, mousePosX, mousePosY) {
         // Prevent zooming while actively drawing to maintain coordinate integrity
@@ -437,7 +399,7 @@ class Zoom
         this.camX = worldX - mouseX / this.zoom;
         this.camY = worldY - mouseY / this.zoom;
 
-        this.draw();
+        this.render.draw();
     }
     zoomCenter(deltaY) {
 
@@ -460,7 +422,7 @@ class Zoom
         this.camX = worldX - centerX / this.zoom;
         this.camY = worldY - centerY / this.zoom;
 
-        this.draw();
+        this.render.draw();
     }
     zoomingTouch(newZoom,centerX,centerY)
     {
@@ -472,14 +434,9 @@ class Zoom
         this.zoom=newZoom;
         this.camX=worldX-centerX/this.zoom
         this.camY=worldY-centerY/this.zoom
-        this.draw();
+        this.render.draw();
     }
 }
-const drawInst=new Draw()
-const zom=new Zoom(drawInst);
-const undoInst=new UndoStack(drawInst,zom)
-drawInst.setUndoInstance(undoInst);
-drawInst.zom=zom;
 
 
 class Listener
@@ -526,10 +483,12 @@ class Listener
 
         bgColor.addEventListener('input', (e)=>{
             canvas.style.background=e.target.value;
-            e.target.blur
+            e.target.blur()
 
         });
         clear_btn.addEventListener("click", ()=>{
+            const ok=confirm("Clear Everything?")
+            if(!ok) return;
             drawInst.clear();
             undoInst.reset();
         });
@@ -677,11 +636,11 @@ class Listener
         })
     }
 }
-new Listener()
 class Eraser
 {
-    constructor()
+    constructor(renderer)
     {
+        this.render=renderer
         this.isEraser=false;
         this.init();
     }
@@ -690,9 +649,117 @@ class Eraser
         eraser.addEventListener('click', ()=>{
             this.isEraser=!this.isEraser;
             eraser.classList.toggle('active-mode', this.isEraser);
-            zom.draw();
+            this.render.draw();
         })
     }
 }
-let erase=new Eraser();
+class Renderer {
+    constructor({ ctx, canvas, dpr, drawInst, zom, size, color, bgColor }) {
+        this.ctx = ctx;
+        this.canvas = canvas;
+        this.dpr = dpr;
+
+        this.drawInst = drawInst;
+        this.zom = zom;
+
+        this.size = size;
+        this.color = color;
+        this.bgColor = bgColor;
+    }
+
+    reset() {
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+
+    applyCamera() {
+        this.ctx.setTransform(
+            this.zom.zoom * this.dpr,
+            0,
+            0,
+            this.zom.zoom * this.dpr,
+            -this.zom.camX * this.zom.zoom * this.dpr,
+            -this.zom.camY * this.zom.zoom * this.dpr
+        );
+    }
+
+    drawStroke(stroke) {
+        if (!stroke.length) return;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(stroke[0][0], stroke[0][1]);
+
+        for (let i = 1; i < stroke.length; i++) {
+            this.ctx.lineTo(stroke[i][0], stroke[i][1]);
+        }
+
+        this.ctx.closePath();
+        this.ctx.fill();
+    }
+
+    drawSavedStrokes() {
+        for (let s of this.drawInst.strokes) {
+            if (s.type === "erase") {
+                this.ctx.globalCompositeOperation = "destination-out";
+            } else {
+                this.ctx.globalCompositeOperation = "source-over";
+                this.ctx.fillStyle = s.color;
+            }
+            this.drawStroke(s.stroke);
+        }
+    }
+
+    drawLiveStroke() {
+        const points = this.drawInst.interpolatedPoints;
+        if (points.length <= 1) return;
+
+        const liveStroke = getStroke(points, {
+            size: this.size.value / this.zom.zoom,
+            thinning: 0.6,
+            smoothing: 0.5,
+            streamline: 0.5,
+            simulatePressure: true,
+            last: true
+        });
+
+        if (this.drawInst.eraser.isEraser) {
+            this.ctx.globalCompositeOperation = "destination-out";
+        } else {
+            this.ctx.globalCompositeOperation = "source-over";
+            this.ctx.fillStyle = this.color.value;
+        }
+
+        this.drawStroke(liveStroke);
+    }
+
+    draw() {
+        this.reset();
+        this.applyCamera();
+
+        this.drawSavedStrokes();
+
+        this.ctx.globalCompositeOperation = "source-over";
+
+        this.drawLiveStroke();
+    }
+}
+const drawInst=new Draw(null)
+const zom=new Zoom(drawInst,null);
+const renderer=new Renderer({
+    ctx,
+    canvas,
+    dpr,
+    drawInst,
+    zom,
+    size,
+    color,
+    bgColor
+});
+drawInst.render=renderer;
+drawInst.zom=zom;
+zom.render=renderer;
+const undoInst=new UndoStack(drawInst,renderer)
+drawInst.setUndoInstance(undoInst);
+let erase=new Eraser(renderer);
 drawInst.setEraserInstance(erase)
+new Listener()
